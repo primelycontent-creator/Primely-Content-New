@@ -55,7 +55,7 @@ export async function GET(req: Request) {
       select: {
         id: true,
         title: true,
-        niche: true,
+        niches: true,
         deadline: true,
         createdAt: true,
       },
