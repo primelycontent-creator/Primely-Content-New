@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       data: {
         termsAcceptedAt: now,
         privacyAcceptedAt: now,
-        
+        agbAcceptedAt: now,
         termsVersion: versions.termsVersion,
         privacyVersion: versions.privacyVersion,
         agbVersion: versions.agbVersion,

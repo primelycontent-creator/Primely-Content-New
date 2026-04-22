@@ -106,8 +106,11 @@ model User {
 
   termsAcceptedAt   DateTime?
   privacyAcceptedAt DateTime?
-  termsVersion      String?
-  privacyVersion    String?
+  agbAcceptedAt     DateTime?
+
+  termsVersion   String?
+  privacyVersion String?
+  agbVersion     String?
 
   emailNotificationsEnabled Boolean @default(true)
   inAppNotificationsEnabled Boolean @default(true)
@@ -135,12 +138,11 @@ model User {
 }
 
 model UserSettings {
-  id String @id @default(cuid())
-
+  id     String @id @default(cuid())
   userId String @unique
 
-  inAppNotifications  Boolean @default(true)
-  emailNotifications  Boolean @default(true)
+  inAppNotifications Boolean @default(true)
+  emailNotifications Boolean @default(true)
 
   notifyNewBrief      Boolean @default(true)
   notifyCreatorUpload Boolean @default(true)
@@ -266,14 +268,13 @@ model Brief {
   assignedCreatorId String?
   assignedCreator   User? @relation("BriefAssignedCreator", fields: [assignedCreatorId], references: [id], onDelete: SetNull)
 
-  // Cal.com booking
-  consultationRequired     Boolean   @default(true)
-  consultationBooked       Boolean   @default(false)
-  consultationBookedAt     DateTime?
-  consultationEventType    String?
-  consultationBookingUid   String?   @unique
-  consultationBookingUrl   String?
-  consultationAttendeeName String?
+  consultationRequired      Boolean  @default(true)
+  consultationBooked        Boolean  @default(false)
+  consultationBookedAt      DateTime?
+  consultationEventType     String?
+  consultationBookingUid    String?  @unique
+  consultationBookingUrl    String?
+  consultationAttendeeName  String?
   consultationAttendeeEmail String?
 
   createdAt DateTime @default(now())
@@ -381,8 +382,8 @@ model SupportTicket {
   createdAt DateTime            @default(now())
   updatedAt DateTime            @updatedAt
 
-  user     User           @relation("SupportTicketsByUser", fields: [userId], references: [id], onDelete: Cascade)
-  brief    Brief?         @relation(fields: [briefId], references: [id], onDelete: SetNull)
+  user     User             @relation("SupportTicketsByUser", fields: [userId], references: [id], onDelete: Cascade)
+  brief    Brief?           @relation(fields: [briefId], references: [id], onDelete: SetNull)
   messages SupportMessage[]
 
   @@index([userId])
@@ -425,10 +426,10 @@ model LegalDocument {
 }
 
 model LegalAcceptance {
-  id         String            @id @default(cuid())
+  id         String   @id @default(cuid())
   userId     String
   documentId String
-  acceptedAt DateTime          @default(now())
+  acceptedAt DateTime @default(now())
 
   user     User          @relation("AcceptedByUser", fields: [userId], references: [id], onDelete: Cascade)
   document LegalDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
