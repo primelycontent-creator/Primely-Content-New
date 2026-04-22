@@ -407,14 +407,14 @@ export default function StaffCreatorsPage() {
                     <div className="mt-3 line-clamp-2 text-sm text-gray-600">
                       {p?.bio?.trim()
                         ? p.bio
-                        : (p?.niches ?? []).length
-                        ? p.niches.join(", ")
-                        : "No short description yet."}
+                        : (p?.niches ?? []).length > 0
+                          ? (p?.niches ?? []).join(", ")
+                          : "No short description yet."}
                     </div>
 
                     {(p?.equipment ?? []).length > 0 ? (
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {p.equipment.slice(0, 3).map((eq) => (
+                        {(p?.equipment ?? []).slice(0, 3).map((eq) => (
                           <span
                             key={eq}
                             className="rounded-full border bg-white px-3 py-1 text-[11px] font-semibold text-gray-700"
@@ -422,9 +422,9 @@ export default function StaffCreatorsPage() {
                             {eq}
                           </span>
                         ))}
-                        {p.equipment.length > 3 ? (
+                        {(p?.equipment ?? []).length > 3 ? (
                           <span className="rounded-full border bg-white px-3 py-1 text-[11px] font-semibold text-gray-500">
-                            +{p.equipment.length - 3} more
+                            +{(p?.equipment ?? []).length - 3} more
                           </span>
                         ) : null}
                       </div>
