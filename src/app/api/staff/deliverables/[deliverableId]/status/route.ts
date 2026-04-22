@@ -4,14 +4,13 @@ import { requireStaff } from "@/lib/auth-server";
 
 const ALLOWED = ["PENDING", "CHANGES_REQUESTED", "APPROVED"] as const;
 
-export async function POST(
-  req: NextRequest,
-  ctx: { params: Promise<{ deliverableId: string }> }
-) {
+export async function POST(req: NextRequest, context: any) {
   const auth = await requireStaff(req);
-  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
 
-  const { deliverableId } = await ctx.params;
+  const { deliverableId } = await context.params;
   const body = await req.json();
   const status = String(body?.status ?? "").toUpperCase();
 
@@ -25,7 +24,6 @@ export async function POST(
     select: { id: true, status: true, briefId: true },
   });
 
-  // Wenn alle Deliverables APPROVED -> Brief DONE
   const counts = await prisma.deliverable.groupBy({
     by: ["status"],
     where: { briefId: updated.briefId },
