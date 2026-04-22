@@ -93,7 +93,11 @@ export default function LoginPage() {
 
       const finalRole = meJson.user.role;
       const defaultTarget = dashboardFor(finalRole);
-      const target = isAllowedNext(next, finalRole) && next ? next: defaultTarget;
+
+      let target: string = defaultTarget;
+      if (next && isAllowedNext(next, finalRole)) {
+        target = next;
+      }
 
       window.location.href = target;
     } catch (err: any) {
