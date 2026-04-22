@@ -37,7 +37,9 @@ export async function PATCH(
 ) {
   try {
     const auth = await getAuthedStaff(req);
-    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
 
     const { id } = await ctx.params;
     if (!id) {
