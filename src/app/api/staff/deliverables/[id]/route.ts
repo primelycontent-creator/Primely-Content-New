@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import prisma from "@/lib/prisma";
 import { DeliverableStatus, NotificationType } from "@prisma/client";
@@ -31,13 +31,16 @@ async function getAuthedStaff(req: Request) {
   return { userId: dbUser.id };
 }
 
-export async function PATCH(req: Request, ctx: { params: Promise<{ deliverableId: string }> }) {
+export async function PATCH(
+  req: NextRequest,
+  ctx: { params: Promise<{ id: string }> }
+) {
   try {
     const auth = await getAuthedStaff(req);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    const { deliverableId } = await ctx.params;
-    if (!deliverableId) {
+    const { id } = await ctx.params;
+    if (!id) {
       return NextResponse.json({ error: "Missing deliverable id" }, { status: 400 });
     }
 
@@ -64,7 +67,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ deliverableId
     }
 
     const existing = await prisma.deliverable.findUnique({
-      where: { id: deliverableId },
+      where: { id },
       select: {
         id: true,
         briefId: true,
@@ -78,7 +81,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ deliverableId
     }
 
     const updated = await prisma.deliverable.update({
-      where: { id: deliverableId },
+      where: { id },
       data: {
         status: nextStatus,
         staffFeedback: nextStatus === DeliverableStatus.CHANGES_REQUESTED ? feedback : null,
