@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 
@@ -37,7 +37,7 @@ function isAllowedNext(next: string | null, role: Role) {
   return false;
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
 
@@ -94,7 +94,7 @@ export default function LoginPage() {
       const finalRole = meJson.user.role;
       const defaultTarget = dashboardFor(finalRole);
 
-      let target: string = defaultTarget;
+      let target = defaultTarget;
       if (next && isAllowedNext(next, finalRole)) {
         target = next;
       }
@@ -158,5 +158,22 @@ export default function LoginPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[calc(100vh-120px)] items-center justify-center bg-neutral-100 px-4 py-10">
+          <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow">
+            <h1 className="mb-2 text-center text-3xl font-semibold">Log in</h1>
+            <p className="text-center text-sm text-gray-600">Loading…</p>
+          </div>
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }
