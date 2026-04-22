@@ -4,13 +4,16 @@ import { requireStaff } from "@/lib/auth-server";
 
 const ALLOWED = ["PENDING", "CHANGES_REQUESTED", "APPROVED"] as const;
 
-export async function POST(req: NextRequest, context: any) {
+export async function POST(
+  req: NextRequest,
+  ctx: { params: Promise<{ id: string }> }
+) {
   const auth = await requireStaff(req);
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  const { deliverableId } = await context.params;
+  const { id } = await ctx.params;
   const body = await req.json();
   const status = String(body?.status ?? "").toUpperCase();
 
@@ -19,7 +22,7 @@ export async function POST(req: NextRequest, context: any) {
   }
 
   const updated = await prisma.deliverable.update({
-    where: { id: deliverableId },
+    where: { id },
     data: { status: status as any },
     select: { id: true, status: true, briefId: true },
   });
