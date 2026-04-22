@@ -1,14 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 type Role = "BRAND" | "CREATOR" | "STAFF";
 
@@ -51,10 +46,25 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const supabase = useMemo(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!url || !anonKey) {
+      return null;
+    }
+
+    return createClient(url, anonKey);
+  }, []);
+
   async function handleLogin() {
     try {
       setLoading(true);
       setError(null);
+
+      if (!supabase) {
+        throw new Error("Supabase environment variables are missing.");
+      }
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -83,7 +93,7 @@ export default function LoginPage() {
 
       const finalRole = meJson.user.role;
       const defaultTarget = dashboardFor(finalRole);
-      const target = isAllowedNext(next, finalRole) ? next! : defaultTarget;
+      const target = isAllowedNext(next, finalRole) && next ? next: defaultTarget;
 
       window.location.href = target;
     } catch (err: any) {
@@ -135,6 +145,7 @@ export default function LoginPage() {
         ) : null}
 
         <button
+          type="button"
           onClick={handleLogin}
           disabled={loading}
           className="w-full rounded-lg bg-black py-3 text-white transition hover:opacity-90 disabled:opacity-60"
