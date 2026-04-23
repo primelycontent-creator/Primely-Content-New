@@ -46,17 +46,25 @@ function formatDate(value: string | null) {
   if (!value) return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString();
+  return d.toLocaleDateString("de-DE");
 }
 
 function licenseLabel(v: BriefListItem["licenseTerm"]) {
   if (!v) return "—";
-  if (v === "M1") return "1 Month";
-  if (v === "M3") return "3 Months";
-  if (v === "M6") return "6 Months";
-  if (v === "M12") return "12 Months";
-  if (v === "UNLIMITED") return "Unlimited";
+  if (v === "M1") return "1 Monat";
+  if (v === "M3") return "3 Monate";
+  if (v === "M6") return "6 Monate";
+  if (v === "M12") return "12 Monate";
+  if (v === "UNLIMITED") return "Unbegrenzt";
   return String(v);
+}
+
+function statusLabel(status: BriefListItem["status"]) {
+  if (status === "DRAFT") return "Entwurf";
+  if (status === "SUBMITTED") return "Eingereicht";
+  if (status === "APPROVED") return "Freigegeben";
+  if (status === "DECLINED") return "Abgelehnt";
+  return status;
 }
 
 function statusBadge(status: BriefListItem["status"]) {
@@ -153,56 +161,65 @@ export default function BrandDashboardPage() {
 
   const welcomeName = getBrandWelcomeName(user);
 
+  const filterLabels: Record<"ALL" | BriefListItem["status"], string> = {
+    ALL: "Alle",
+    DRAFT: "Entwürfe",
+    SUBMITTED: "Eingereicht",
+    APPROVED: "Freigegeben",
+    DECLINED: "Abgelehnt",
+  };
+
   return (
-    <div className="p-8">
-      <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">
+    <div className="px-4 py-6 sm:p-8">
+      <div className="rounded-3xl border bg-white/70 p-5 shadow-sm sm:p-8 lg:p-10">
         {user ? <ProfileCompletionBanner role="BRAND" user={user} /> : null}
 
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div>
-            <h1 className="font-serif text-5xl leading-[0.95] tracking-tight text-gray-900">
-              Welcome{welcomeName ? `, ${welcomeName}` : ""}
+            <h1 className="font-serif text-4xl leading-[0.95] tracking-tight text-gray-900 sm:text-5xl">
+              Willkommen{welcomeName ? `, ${welcomeName}` : ""}
             </h1>
-            <p className="mt-3 max-w-2xl text-sm text-gray-600">
-              Manage your briefings, keep campaigns organized and track progress from draft to approval.
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
+              Verwalte deine Briefings, halte Kampagnen organisiert und verfolge den Fortschritt vom Entwurf bis zur Freigabe.
             </p>
 
             <div className="mt-4 flex flex-wrap gap-2 text-xs">
               <span className="rounded-full border bg-white px-3 py-1">
-                All: <b>{stats.all}</b>
+                Alle: <b>{stats.all}</b>
               </span>
               <span className="rounded-full border bg-white px-3 py-1">
-                Draft: <b>{stats.draft}</b>
+                Entwürfe: <b>{stats.draft}</b>
               </span>
               <span className="rounded-full border bg-white px-3 py-1">
-                Submitted: <b>{stats.submitted}</b>
+                Eingereicht: <b>{stats.submitted}</b>
               </span>
               <span className="rounded-full border bg-white px-3 py-1">
-                Approved: <b>{stats.approved}</b>
+                Freigegeben: <b>{stats.approved}</b>
               </span>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap md:justify-end">
             <Link
               href="/brand/profile"
-              className="rounded-full border bg-white px-6 py-3 text-sm font-semibold hover:bg-gray-50"
+              className="rounded-full border bg-white px-6 py-3 text-center text-sm font-semibold hover:bg-gray-50"
             >
-              Brand profile
+              Brand-Profil
             </Link>
 
             <Link
               href="/brand/briefs/new"
-              className="rounded-full bg-emerald-950 px-6 py-3 text-sm font-semibold text-white shadow hover:opacity-95"
+              className="rounded-full bg-emerald-950 px-6 py-3 text-center text-sm font-semibold text-white shadow hover:opacity-95"
             >
-              + New Brief
+              + Neues Briefing
             </Link>
 
             <button
+              type="button"
               onClick={load}
               className="rounded-full border bg-white px-6 py-3 text-sm font-semibold hover:bg-gray-50"
             >
-              Refresh
+              Aktualisieren
             </button>
           </div>
         </div>
@@ -212,8 +229,8 @@ export default function BrandDashboardPage() {
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search title / niche..."
-              className="w-full rounded-2xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-950/20"
+              placeholder="Titel oder Nische suchen..."
+              className="w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:ring-2 focus:ring-emerald-950/20"
             />
           </div>
 
@@ -231,7 +248,7 @@ export default function BrandDashboardPage() {
                       : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50"
                   }
                 >
-                  {s}
+                  {filterLabels[s]}
                 </button>
               );
             })}
@@ -240,23 +257,27 @@ export default function BrandDashboardPage() {
 
         <div className="mt-6">
           {loading ? (
-            <div className="rounded-3xl border bg-white p-8 text-sm text-gray-600">Loading...</div>
+            <div className="rounded-3xl border bg-white p-8 text-sm text-gray-600">
+              Wird geladen...
+            </div>
           ) : error ? (
             <div className="rounded-3xl border bg-white p-8">
-              <div className="text-sm font-semibold text-rose-700">Error</div>
+              <div className="text-sm font-semibold text-rose-700">Fehler</div>
               <pre className="mt-2 whitespace-pre-wrap text-xs text-gray-700">{error}</pre>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="rounded-3xl border bg-white p-10 text-center">
-              <div className="text-lg font-semibold text-gray-900">No briefings yet</div>
-              <div className="mt-2 text-sm text-gray-600">
-                Create your first briefing to start your first campaign.
+            <div className="rounded-3xl border bg-white p-8 text-center sm:p-10">
+              <div className="text-lg font-semibold text-gray-900">
+                Noch keine Briefings vorhanden
+              </div>
+              <div className="mt-2 text-sm leading-6 text-gray-600">
+                Erstelle dein erstes Briefing, um deine erste Kampagne zu starten.
               </div>
               <Link
                 href="/brand/briefs/new"
                 className="mt-6 inline-flex rounded-full bg-emerald-950 px-6 py-3 text-sm font-semibold text-white shadow hover:opacity-95"
               >
-                + New Brief
+                + Neues Briefing
               </Link>
             </div>
           ) : (
@@ -265,7 +286,7 @@ export default function BrandDashboardPage() {
                 <Link
                   key={b.id}
                   href={`/brand/briefs/${b.id}`}
-                  className="group rounded-3xl border bg-white p-6 transition hover:bg-gray-50"
+                  className="group rounded-3xl border bg-white p-5 transition hover:bg-gray-50 sm:p-6"
                 >
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div className="min-w-0">
@@ -273,7 +294,7 @@ export default function BrandDashboardPage() {
                         <div className="truncate text-lg font-semibold text-gray-900">
                           {b.title}
                         </div>
-                        <span className={statusBadge(b.status)}>{b.status}</span>
+                        <span className={statusBadge(b.status)}>{statusLabel(b.status)}</span>
                       </div>
 
                       <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-600">
@@ -281,27 +302,27 @@ export default function BrandDashboardPage() {
                           Deadline: <b>{formatDate(b.deadline)}</b>
                         </span>
                         <span className="rounded-full border bg-white px-3 py-1">
-                          License: <b>{licenseLabel(b.licenseTerm)}</b>
+                          Lizenz: <b>{licenseLabel(b.licenseTerm)}</b>
                         </span>
                         <span className="rounded-full border bg-white px-3 py-1">
-                          Assets: <b>{b._count?.assets ?? 0}</b>
+                          Dateien: <b>{b._count?.assets ?? 0}</b>
                         </span>
                         <span className="rounded-full border bg-white px-3 py-1">
-                          Updated: <b>{formatDate(b.updatedAt)}</b>
+                          Aktualisiert: <b>{formatDate(b.updatedAt)}</b>
                         </span>
                       </div>
 
                       {(b.nicheGroup || (b.niches?.length ?? 0) > 0) && (
                         <div className="mt-3 text-xs text-gray-700">
-                          <span className="font-semibold">{b.nicheGroup ?? "Niches"}:</span>{" "}
+                          <span className="font-semibold">{b.nicheGroup ?? "Nischen"}:</span>{" "}
                           {(b.niches ?? []).join(", ") || "—"}
                         </div>
                       )}
                     </div>
 
                     <div className="flex shrink-0 items-center gap-2">
-                      <span className="text-xs font-semibold text-emerald-950 opacity-0 transition group-hover:opacity-100">
-                        Open →
+                      <span className="text-xs font-semibold text-emerald-950 opacity-100 transition md:opacity-0 md:group-hover:opacity-100">
+                        Öffnen →
                       </span>
                     </div>
                   </div>
