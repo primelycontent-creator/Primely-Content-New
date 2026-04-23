@@ -69,7 +69,7 @@ function LoginPageContent() {
       setError(null);
 
       if (!supabase) {
-        throw new Error("Supabase environment variables are missing.");
+        throw new Error("Supabase-Umgebungsvariablen fehlen.");
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -81,7 +81,7 @@ function LoginPageContent() {
 
       const session = data.session;
       if (!session?.access_token) {
-        throw new Error("No session returned");
+        throw new Error("Keine Sitzung zurückgegeben.");
       }
 
       const meRes = await fetch("/api/me", {
@@ -98,12 +98,12 @@ function LoginPageContent() {
         const backendError =
           meJson && "error" in meJson
             ? meJson.error
-            : text || `Request failed with status ${meRes.status}`;
+            : text || `Anfrage fehlgeschlagen mit Status ${meRes.status}`;
         throw new Error(backendError);
       }
 
       if (!meJson || !("ok" in meJson) || !meJson.ok) {
-        throw new Error("Invalid /api/me response");
+        throw new Error("Ungültige Antwort von /api/me");
       }
 
       const finalRole = meJson.user.role;
@@ -116,49 +116,59 @@ function LoginPageContent() {
 
       window.location.href = target;
     } catch (err: any) {
-      setError(err?.message ?? "Login failed");
+      setError(err?.message ?? "Anmeldung fehlgeschlagen");
     } finally {
       setLoading(false);
     }
   }
 
+  const inputClassName =
+    "w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-black focus:ring-2 focus:ring-black/10";
+
   return (
-    <div className="flex min-h-[calc(100vh-120px)] items-center justify-center bg-neutral-100 px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow">
-        <h1 className="mb-2 text-center text-3xl font-semibold">Log in</h1>
-        <p className="mb-6 text-center text-sm text-gray-600">
-          Access your dashboard and continue your workflow.
+    <div className="flex min-h-[calc(100vh-120px)] items-center justify-center bg-neutral-100 px-4 py-8 sm:py-10">
+      <div className="w-full max-w-md rounded-2xl border border-black/5 bg-white p-5 shadow-sm sm:p-8">
+        <h1 className="mb-2 text-center text-2xl font-semibold text-gray-900 sm:text-3xl">
+          Anmelden
+        </h1>
+
+        <p className="mb-6 text-center text-sm leading-6 text-gray-600">
+          Greife auf dein Dashboard zu und setze deine Arbeit fort.
         </p>
 
-        <input
-          type="email"
-          placeholder="Email"
-          className="mb-4 w-full rounded-lg border p-3"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-        />
+        <div className="space-y-4">
+          <input
+            type="email"
+            placeholder="E-Mail"
+            className={inputClassName}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            inputMode="email"
+          />
 
-        <input
-          type="password"
-          placeholder="Password"
-          className="mb-4 w-full rounded-lg border p-3"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
-        />
+          <input
+            type="password"
+            placeholder="Passwort"
+            className={inputClassName}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+          />
+        </div>
 
-        <div className="mb-6 flex items-center justify-between text-sm">
-          <Link href="/forgot-password" className="text-gray-700 underline">
-            Forgot password?
+        <div className="mt-5 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <Link href="/forgot-password" className="text-gray-700 underline underline-offset-2">
+            Passwort vergessen?
           </Link>
-          <Link href="/register" className="text-gray-700 underline">
-            Create account
+
+          <Link href="/register" className="text-gray-700 underline underline-offset-2">
+            Konto erstellen
           </Link>
         </div>
 
         {error ? (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
             {error}
           </div>
         ) : null}
@@ -167,9 +177,9 @@ function LoginPageContent() {
           type="button"
           onClick={handleLogin}
           disabled={loading}
-          className="w-full rounded-lg bg-black py-3 text-white transition hover:opacity-90 disabled:opacity-60"
+          className="mt-6 w-full rounded-xl bg-black px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
         >
-          {loading ? "Logging in..." : "Log in"}
+          {loading ? "Anmeldung läuft..." : "Anmelden"}
         </button>
       </div>
     </div>
@@ -180,10 +190,12 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[calc(100vh-120px)] items-center justify-center bg-neutral-100 px-4 py-10">
-          <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow">
-            <h1 className="mb-2 text-center text-3xl font-semibold">Log in</h1>
-            <p className="text-center text-sm text-gray-600">Loading…</p>
+        <div className="flex min-h-[calc(100vh-120px)] items-center justify-center bg-neutral-100 px-4 py-8 sm:py-10">
+          <div className="w-full max-w-md rounded-2xl border border-black/5 bg-white p-5 shadow-sm sm:p-8">
+            <h1 className="mb-2 text-center text-2xl font-semibold text-gray-900 sm:text-3xl">
+              Anmelden
+            </h1>
+            <p className="text-center text-sm text-gray-600">Lädt...</p>
           </div>
         </div>
       }

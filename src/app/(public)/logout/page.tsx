@@ -19,5 +19,9 @@ export default function LogoutPage() {
     })();
   }, [router]);
 
-  return <div className="p-10 text-center text-black/60">Logging out…</div>;
+  return (
+    <div className="px-4 py-10 text-center text-sm text-black/60 sm:text-base">
+      Abmeldung läuft...
+    </div>
+  );
 }
