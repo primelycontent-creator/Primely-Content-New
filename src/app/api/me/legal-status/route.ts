@@ -11,12 +11,39 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    if (auth.role === "STAFF") {
+      return NextResponse.json({
+        ok: true,
+        legal: {
+          role: null,
+          requiresAcceptance: false,
+          current: null,
+          accepted: null,
+          missing: {
+            terms: false,
+            privacy: false,
+            agb: false,
+          },
+        },
+      });
+    }
+
     const role = normalizeLegalRole(auth.role);
     if (!role) {
-      return NextResponse.json(
-        { error: "No legal flow for this role" },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        ok: true,
+        legal: {
+          role: null,
+          requiresAcceptance: false,
+          current: null,
+          accepted: null,
+          missing: {
+            terms: false,
+            privacy: false,
+            agb: false,
+          },
+        },
+      });
     }
 
     const user = await prisma.user.findUnique({
@@ -66,7 +93,7 @@ export async function GET(req: Request) {
             title: "Legal documents updated",
             message:
               "Please review and accept the latest Terms, Privacy Policy and AGB before continuing.",
-            link: "/legal-update",
+            link: `/legal/${role.toLowerCase()}`,
           },
         });
       }

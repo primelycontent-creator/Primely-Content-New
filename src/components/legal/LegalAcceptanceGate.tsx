@@ -1,14 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { LEGAL_VERSIONS } from "@/lib/legal";
 import { usePathname, useRouter } from "next/navigation";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 type Role = "BRAND" | "CREATOR" | "STAFF";
 
@@ -36,6 +31,14 @@ export default function LegalAcceptanceGate({
   const router = useRouter();
   const pathname = usePathname();
 
+  const supabase = useMemo(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!url || !anonKey) return null;
+    return createClient(url, anonKey);
+  }, []);
+
   useEffect(() => {
     checkLegal();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -43,6 +46,12 @@ export default function LegalAcceptanceGate({
 
   async function checkLegal() {
     try {
+      if (!supabase) {
+        setAllowed(true);
+        setLoading(false);
+        return;
+      }
+
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
 
@@ -68,16 +77,14 @@ export default function LegalAcceptanceGate({
         return;
       }
 
-      // STAFF soll keinen Legal-Redirect bekommen
       if (user.role === "STAFF") {
         setAllowed(true);
         setLoading(false);
         return;
       }
 
-      const role = user.role; // nur BRAND oder CREATOR relevant
       const expected =
-        role === "BRAND" ? LEGAL_VERSIONS.BRAND : LEGAL_VERSIONS.CREATOR;
+        user.role === "BRAND" ? LEGAL_VERSIONS.BRAND : LEGAL_VERSIONS.CREATOR;
 
       const isAccepted =
         user.termsVersion === expected.termsVersion &&
@@ -88,8 +95,10 @@ export default function LegalAcceptanceGate({
         !!user.agbAcceptedAt;
 
       if (!isAccepted) {
-        if (!pathname.startsWith("/legal")) {
-          router.push(`/legal/terms/${role.toLowerCase()}`);
+        const target = `/legal/${user.role.toLowerCase()}`;
+
+        if (pathname !== target) {
+          router.push(target);
           return;
         }
       }

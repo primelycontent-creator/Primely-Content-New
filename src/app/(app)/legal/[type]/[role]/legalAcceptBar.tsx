@@ -31,7 +31,7 @@ export default function LegalAcceptBar({ role }: { role: Role }) {
       setError(null);
 
       if (!checked) {
-        throw new Error("Please confirm that you have read the legal documents.");
+        throw new Error("Please confirm that you have read and accept all legal documents.");
       }
 
       if (!supabase) {
@@ -51,7 +51,11 @@ export default function LegalAcceptBar({ role }: { role: Role }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          acceptTerms: true,
+          acceptPrivacy: true,
+          acceptAgb: true,
+        }),
       });
 
       const text = await res.text();
@@ -84,7 +88,7 @@ export default function LegalAcceptBar({ role }: { role: Role }) {
           className="mt-1"
         />
         <span>
-          I have read and accept the current Terms, Privacy Policy and AGB.
+          I have read and accept the current Terms of Service, Privacy Policy and AGB.
         </span>
       </label>
 
