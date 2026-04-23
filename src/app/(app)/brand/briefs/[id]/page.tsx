@@ -1,13 +1,106 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { useMemo, useRef, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
+const LICENSE_OPTIONS = [
+  "1 Month",
+  "3 Months",
+  "6 Months",
+  "12 Months",
+  "Unlimited",
+] as const;
+
+type LicenseLabel = (typeof LICENSE_OPTIONS)[number];
+
+const NICHE_GROUPS = {
+  "Beauty & Skincare": ["Hautpflege", "Make-up", "Anti-Aging", "Naturkosmetik"],
+  "Fitness & Gesundheit": [
+    "Supplements",
+    "Home Workouts",
+    "Fitness-Programme",
+    "Abnehmprodukte",
+    "Biohacking",
+  ],
+  Fashion: ["Streetwear", "Sportbekleidung", "Schmuck", "Taschen", "Sneaker"],
+  "Tech & Gadgets": [
+    "Smartphones & Zubehör",
+    "Gimbals",
+    "Kameras",
+    "Smartwatches",
+    "KI-Tools & Apps",
+  ],
+  "Home & Living": [
+    "Einrichtung",
+    "Küchengadgets",
+    "Haushaltshelfer",
+    "DIY-Produkte",
+    "Dekoration",
+  ],
+  "Food & Getränke": [
+    "Proteinprodukte",
+    "Kaffee-Marken",
+    "Energy Drinks",
+    "Süßigkeiten",
+    "Kochboxen",
+  ],
+  "Persönlichkeitsentwicklung & Coaching": [
+    "Online-Kurse",
+    "Trading",
+    "Mindset",
+    "Dating-Coaching",
+    "Business-Coaching",
+  ],
+  "Finanzen & Versicherungen": [
+    "Investment-Apps",
+    "Kryptowährungen",
+    "Versicherungen",
+    "Kreditkarten",
+  ],
+  Haustiere: ["Hundefutter", "Katzenzubehör", "Spielzeug", "Pflegeprodukte"],
+  "Reisen & Lifestyle": [
+    "Reisegadgets",
+    "Hotels",
+    "Koffer",
+    "Camper",
+    "Auslandsversicherungen",
+  ],
+} as const;
+
+type NicheGroup = keyof typeof NICHE_GROUPS;
+
+type BrandProfile = {
+  companyName?: string | null;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+};
+
+function safeFileName(name: string) {
+  return name
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9._-]/g, "");
+}
+
+function mergeUniqueFiles(prev: File[], incoming: File[], max = 10) {
+  const map = new Map<string, File>();
+  for (const f of prev) map.set(`${f.name}-${f.size}`, f);
+  for (const f of incoming) map.set(`${f.name}-${f.size}`, f);
+  return Array.from(map.values()).slice(0, max);
+}
+
+function bytesToMb(n?: number | null) {
+  if (!n || n <= 0) return "";
+  return `${(n / 1024 / 1024).toFixed(2)} MB`;
+}
 
 async function readSafeJson(res: Response) {
   const text = await res.text();
@@ -18,322 +111,626 @@ async function readSafeJson(res: Response) {
   }
 }
 
-type DeliverableRow = {
-  id: string;
-  status: string;
-  brandStatus: string;
-  brandFeedback: string | null;
-  bucket: string;
-  path: string;
-  fileName: string | null;
-  mimeType: string | null;
-  sizeBytes: number | null;
-  createdAt: string;
-};
+function licenseLabel(v: LicenseLabel) {
+  if (v === "1 Month") return "1 Monat";
+  if (v === "3 Months") return "3 Monate";
+  if (v === "6 Months") return "6 Monate";
+  if (v === "12 Months") return "12 Monate";
+  return "Unbegrenzt";
+}
 
-type BriefDetail = {
-  id: string;
+function Section(props: {
   title: string;
-  description: string | null;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  deadline: string | null;
-  licenseTerm: string | null;
-  nicheGroup: string | null;
-  niches: string[];
-  assignedCreator: {
-    id: string;
-    email: string;
-    creatorProfile: {
-      fullName: string | null;
-    } | null;
-  } | null;
-  brand: {
-    id: string;
-    email: string;
-    brandProfile: {
-      companyName: string | null;
-    } | null;
-  };
-  assets: Array<{
-    id: string;
-    bucket: string;
-    path: string;
-    fileName: string | null;
-    mimeType?: string | null;
-    sizeBytes?: number | null;
-    createdAt?: string;
-  }>;
-  deliverables: DeliverableRow[];
-};
+  subtitle?: string;
+  right?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-3xl border bg-white p-5 sm:p-8">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">{props.title}</h2>
+          {props.subtitle ? (
+            <p className="mt-1 text-sm leading-6 text-gray-600">{props.subtitle}</p>
+          ) : null}
+        </div>
+        {props.right ? <div className="shrink-0">{props.right}</div> : null}
+      </div>
+      <div className="mt-6">{props.children}</div>
+    </section>
+  );
+}
 
-function formatBytes(bytes?: number | null) {
-  if (!bytes || bytes <= 0) return "—";
-  const units = ["B", "KB", "MB", "GB"];
-  let size = bytes;
-  let unit = 0;
-  while (size > 1024 && unit < units.length - 1) {
-    size /= 1024;
-    unit++;
+function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      {...props}
+      className={
+        "w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:ring-2 focus:ring-emerald-950/20 " +
+        (props.className ?? "")
+      }
+    />
+  );
+}
+
+function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      {...props}
+      className={
+        "w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:ring-2 focus:ring-emerald-950/20 " +
+        (props.className ?? "")
+      }
+    />
+  );
+}
+
+async function presignUpload(token: string, bucket: string, path: string) {
+  const res = await fetch("/api/storage/presign", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ bucket, path }),
+  });
+
+  const { json, text } = await readSafeJson(res);
+  if (!res.ok) {
+    throw new Error(json?.error ?? `Upload-Vorbereitung fehlgeschlagen: ${text.slice(0, 200)}`);
   }
-  return `${size.toFixed(unit === 0 ? 0 : 2)} ${units[unit]}`;
+  if (!json?.token || !json?.path) {
+    throw new Error("Upload-Vorbereitung hat keinen Token/Pfad zurückgegeben.");
+  }
+
+  return json as { bucket: string; path: string; token: string; signedUrl?: string };
 }
 
-function statusBadge(status: string) {
-  const s = String(status).toUpperCase();
-  const base = "rounded-full border px-3 py-1 text-xs font-semibold";
-
-  if (s === "DRAFT") return `${base} border-gray-200 bg-white text-gray-800`;
-  if (s === "SUBMITTED") return `${base} border-amber-200 bg-amber-50 text-amber-900`;
-  if (s === "REVIEW") return `${base} border-blue-200 bg-blue-50 text-blue-900`;
-  if (s === "IN_PROGRESS") return `${base} border-amber-200 bg-amber-50 text-amber-900`;
-  if (s === "DONE" || s === "APPROVED") return `${base} border-emerald-200 bg-emerald-50 text-emerald-900`;
-  if (s === "DECLINED") return `${base} border-rose-200 bg-rose-50 text-rose-900`;
-
-  return `${base} border-gray-200 bg-white text-gray-800`;
+function mapLicenseToApi(value: LicenseLabel) {
+  if (value === "1 Month") return "M1";
+  if (value === "3 Months") return "M3";
+  if (value === "6 Months") return "M6";
+  if (value === "12 Months") return "M12";
+  return "UNLIMITED";
 }
 
-function reviewBadge(status: string) {
-  const s = String(status).toUpperCase();
-  const base = "rounded-full border px-3 py-1 text-xs font-semibold";
-
-  if (s === "PENDING") return `${base} border-gray-200 bg-white text-gray-800`;
-  if (s === "CHANGES_REQUESTED") return `${base} border-amber-200 bg-amber-50 text-amber-900`;
-  if (s === "APPROVED") return `${base} border-emerald-200 bg-emerald-50 text-emerald-900`;
-
-  return `${base} border-gray-200 bg-white text-gray-800`;
-}
-
-export default function BrandBriefDetailPage() {
-  const params = useParams<{ id: string }>();
-  const briefId = params.id;
+export default function NewBriefPage() {
   const router = useRouter();
 
-  const [token, setToken] = useState<string | null>(null);
-  const [brief, setBrief] = useState<BriefDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const [profile, setProfile] = useState<BrandProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  const companyName = profile?.companyName || "";
+  const contactName = profile?.contactName || "";
+  const contactEmail = profile?.contactEmail || "";
+  const contactPhone = profile?.contactPhone || "";
+
+  const [title, setTitle] = useState("");
+  const [deadline, setDeadline] = useState<string>("");
+  const [licenseTerm, setLicenseTerm] = useState<LicenseLabel>("3 Months");
+  const [deliverableCount, setDeliverableCount] = useState<number>(1);
+  const [description, setDescription] = useState("");
+
+  const groups = Object.keys(NICHE_GROUPS) as NicheGroup[];
+  const [activeGroup, setActiveGroup] = useState<NicheGroup>(groups[0]);
+  const [selectedNiches, setSelectedNiches] = useState<string[]>([]);
+  const activeSubs = NICHE_GROUPS[activeGroup];
+
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setToken(data.session?.access_token ?? null);
-    });
-  }, []);
+    async function loadProfile() {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
 
-  useEffect(() => {
-    (async () => {
-      if (!token || !briefId) return;
+        if (!token) {
+          router.push("/login?next=/brand/briefs/new");
+          return;
+        }
 
-      setLoading(true);
-      setError(null);
+        const res = await fetch("/api/brand/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
 
-      const res = await fetch(`/api/brand/briefs/${briefId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        cache: "no-store",
-      });
+        const { json, text } = await readSafeJson(res);
 
-      const { json, text } = await readSafeJson(res);
+        if (!res.ok) {
+          throw new Error(json?.error ?? text.slice(0, 200));
+        }
 
-      if (!res.ok) {
-        setError((json as any)?.error ?? text.slice(0, 200));
-        setBrief(null);
-        setLoading(false);
-        return;
+        if (!json?.profile || !json.profile.companyName) {
+          router.push("/brand/profile");
+          return;
+        }
+
+        setProfile(json.profile as BrandProfile);
+      } catch (e: any) {
+        alert(e?.message ?? "Brand-Profil konnte nicht geladen werden.");
+      } finally {
+        setProfileLoading(false);
       }
+    }
 
-      setBrief(((json as any)?.brief ?? null) as BriefDetail | null);
-      setLoading(false);
-    })();
-  }, [token, briefId]);
+    loadProfile();
+  }, [router]);
 
-  if (loading) {
-    return (
-      <div className="p-8">
-        <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">
-          <div className="text-sm text-gray-600">Loading brief…</div>
-        </div>
-      </div>
-    );
+  function toggleNiche(n: string) {
+    setSelectedNiches((prev) => {
+      if (prev.includes(n)) return prev.filter((x) => x !== n);
+      if (prev.length >= 5) return prev;
+      return [...prev, n];
+    });
   }
 
-  if (!brief) {
-    return (
-      <div className="p-8">
-        <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">
-          <div className="text-sm text-gray-600">{error ?? "Brief not found"}</div>
-        </div>
-      </div>
-    );
+  function clearNiches() {
+    setSelectedNiches([]);
   }
 
-  const creatorName =
-    brief.assignedCreator?.creatorProfile?.fullName?.trim() ||
-    brief.assignedCreator?.email ||
-    "Not assigned yet";
+  function onPickFiles(list: FileList | null) {
+    if (!list) return;
+    setFiles((prev) => mergeUniqueFiles(prev, Array.from(list), 10));
+  }
+
+  function removeFile(idx: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  const nichesHint = useMemo(
+    () => `${selectedNiches.length}/5 ausgewählt`,
+    [selectedNiches.length]
+  );
+
+  const canSubmit = useMemo(() => {
+    return (
+      !!title.trim() &&
+      !!companyName.trim() &&
+      !!contactName.trim() &&
+      !!contactEmail.trim() &&
+      !saving &&
+      !uploading
+    );
+  }, [title, companyName, contactName, contactEmail, saving, uploading]);
+
+  async function requireSession() {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    const userId = data.session?.user?.id;
+
+    if (!token || !userId) {
+      router.push("/login?next=/brand/briefs/new");
+      return null;
+    }
+    return { token, userId };
+  }
+
+  async function createDraftBrief(token: string) {
+    const res = await fetch("/api/brand/briefs", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        title: title.trim(),
+        description: description.trim() || null,
+        deadline: deadline
+          ? new Date(Date.now() + Number(deadline) * 24 * 60 * 60 * 1000).toISOString()
+          : null,
+        licenseTerm: mapLicenseToApi(licenseTerm),
+        deliverableCount,
+        nicheGroup: activeGroup,
+        niches: selectedNiches.slice(0, 5),
+        companyName: companyName.trim() || null,
+        contactName: contactName.trim() || null,
+        contactEmail: contactEmail.trim() || null,
+        contactPhone: contactPhone.trim() || null,
+      }),
+    });
+
+    const { json, text } = await readSafeJson(res);
+    if (!res.ok) {
+      throw new Error(json?.error ?? `Briefing konnte nicht erstellt werden: ${text.slice(0, 200)}`);
+    }
+
+    const briefId = (json?.brief?.id || json?.briefId) as string | undefined;
+    if (!briefId) throw new Error("Briefing wurde erstellt, aber es wurde keine Briefing-ID zurückgegeben.");
+
+    return briefId;
+  }
+
+  async function uploadAllFiles(token: string, userId: string, briefId: string) {
+    if (files.length === 0) return;
+
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const bucket = "ugc";
+        const path = `users/${userId}/briefs/${briefId}/${crypto.randomUUID()}-${safeFileName(
+          file.name
+        )}`;
+
+        const presign = await presignUpload(token, bucket, path);
+
+        const up = await supabase.storage
+          .from(bucket)
+          .uploadToSignedUrl(presign.path, presign.token, file, {
+            contentType: file.type || "application/octet-stream",
+          });
+
+        if (up.error) throw new Error(up.error.message ?? "Upload fehlgeschlagen.");
+      }
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function submitBrief(token: string, briefId: string) {
+    const res = await fetch(`/api/brand/briefs/${briefId}/submit`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const { json, text } = await readSafeJson(res);
+    if (!res.ok) {
+      throw new Error(json?.error ?? `Einreichen fehlgeschlagen: ${text.slice(0, 200)}`);
+    }
+  }
+
+  async function onSubmit() {
+    try {
+      setSaving(true);
+
+      const session = await requireSession();
+      if (!session) return;
+
+      const briefId = await createDraftBrief(session.token);
+      await uploadAllFiles(session.token, session.userId, briefId);
+      await submitBrief(session.token, briefId);
+
+      router.push("/brand/dashboard");
+      router.refresh();
+    } catch (e: any) {
+      alert(e?.message ?? "Unbekannter Fehler");
+    } finally {
+      setSaving(false);
+      setUploading(false);
+    }
+  }
+
+  if (profileLoading) {
+    return <div className="p-6 text-sm text-gray-600 sm:p-8">Profil wird geladen...</div>;
+  }
 
   return (
-    <div className="p-8">
-      <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">
+    <div className="px-4 py-6 sm:p-8">
+      <div className="mx-auto max-w-4xl rounded-3xl border bg-white/80 p-5 shadow-sm sm:p-8 lg:p-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-          <div className="min-w-0">
-            <div className="text-xs font-semibold tracking-wide text-gray-600">BRIEFING</div>
-            <h1 className="mt-2 font-serif text-5xl leading-[0.95] tracking-tight text-gray-900">
-              {brief.title}
+          <div>
+            <h1 className="font-serif text-4xl leading-[0.95] tracking-tight text-gray-900 sm:text-5xl">
+              Briefing erstellen
             </h1>
-
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className={statusBadge(brief.status)}>
-                {brief.status.replaceAll("_", " ")}
-              </span>
-            </div>
-
-            <div className="mt-3 text-sm text-gray-600">
-              Brand: {brief.brand.brandProfile?.companyName ?? brief.brand.email}
-            </div>
+            <p className="mt-3 text-sm leading-6 text-gray-600">
+              Erstelle ein neues Briefing, lade optional Dateien hoch und reiche es zur Prüfung ein.
+            </p>
           </div>
 
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => router.push("/brand/dashboard")}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/brand/dashboard"
               className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
             >
-              Back
-            </button>
-
-            <button
-              type="button"
-              onClick={() => router.push(`/brand/briefs/${brief.id}/edit`)}
-              className="rounded-full bg-emerald-950 px-6 py-3 text-sm font-semibold text-white shadow hover:opacity-95"
-            >
-              Edit Brief
-            </button>
+              Zurück
+            </Link>
           </div>
         </div>
 
-        {error ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {error}
-          </div>
-        ) : null}
+        <div className="mt-10 space-y-6">
+          <Section
+            title="Kontaktinformationen"
+            subtitle="Automatisch aus deinem Brand-Profil übernommen"
+            right={
+              <Link
+                href="/brand/profile"
+                className="text-xs font-semibold text-gray-500 underline underline-offset-2"
+              >
+                Profil bearbeiten
+              </Link>
+            }
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Firmenname</label>
+                <div className="mt-2">
+                  <Input value={companyName} readOnly />
+                </div>
+              </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          <div className="rounded-3xl border bg-white p-6">
-            <div className="text-sm font-semibold text-gray-900">Campaign Overview</div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Ansprechperson</label>
+                <div className="mt-2">
+                  <Input value={contactName} readOnly />
+                </div>
+              </div>
 
-            <div className="mt-4 space-y-2 text-sm text-gray-700">
               <div>
-                <span className="text-gray-500">Deadline:</span>{" "}
-                {brief.deadline ? new Date(brief.deadline).toLocaleDateString() : "—"}
+                <label className="text-sm font-medium text-gray-700">E-Mail</label>
+                <div className="mt-2">
+                  <Input value={contactEmail} readOnly />
+                </div>
               </div>
+
               <div>
-                <span className="text-gray-500">License:</span> {brief.licenseTerm ?? "—"}
-              </div>
-              <div>
-                <span className="text-gray-500">Niche group:</span> {brief.nicheGroup ?? "—"}
-              </div>
-              <div>
-                <span className="text-gray-500">Niches:</span>{" "}
-                {(brief.niches ?? []).length ? brief.niches.join(", ") : "—"}
-              </div>
-              <div>
-                <span className="text-gray-500">Assigned creator:</span> {creatorName}
+                <label className="text-sm font-medium text-gray-700">Telefon</label>
+                <div className="mt-2">
+                  <Input value={contactPhone} readOnly />
+                </div>
               </div>
             </div>
+          </Section>
 
-            {brief.description ? (
-              <div className="mt-5 rounded-2xl border bg-white/60 p-4">
-                <div className="text-xs font-semibold tracking-wide text-gray-600">DESCRIPTION</div>
-                <p className="mt-2 whitespace-pre-wrap text-sm text-gray-700">
-                  {brief.description}
-                </p>
+          <Section title="Kampagneninformationen" subtitle="Grunddaten für dein Briefing">
+            <div className="grid gap-5">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Briefing-Titel</label>
+                <div className="mt-2">
+                  <Input
+                    placeholder="z. B. TikTok UGC für neues Produkt"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                  />
+                </div>
               </div>
-            ) : null}
-          </div>
 
-          <div className="rounded-3xl border bg-white p-6">
-            <div className="text-sm font-semibold text-gray-900">Brand Files</div>
-
-            {(brief.assets ?? []).length === 0 ? (
-              <p className="mt-4 text-sm text-gray-600">No attachments uploaded yet.</p>
-            ) : (
-              <div className="mt-4 space-y-3">
-                {brief.assets.map((a) => (
-                  <div key={a.id} className="rounded-2xl border bg-white px-4 py-3">
-                    <div className="truncate text-sm font-semibold text-gray-900">
-                      {a.fileName ?? a.path}
-                    </div>
-                    <div className="mt-1 text-xs text-gray-500">
-                      {a.bucket} • {formatBytes(a.sizeBytes)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-3xl border bg-white p-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-sm font-semibold text-gray-900">Creator Deliverables</div>
-              <p className="mt-1 text-xs text-gray-500">
-                Review the uploads for this briefing.
-              </p>
-            </div>
-          </div>
-
-          {(brief.deliverables ?? []).length === 0 ? (
-            <p className="mt-4 text-sm text-gray-600">No deliverables uploaded yet.</p>
-          ) : (
-            <div className="mt-4 space-y-3">
-              {brief.deliverables.map((d, index) => (
-                <div
-                  key={d.id}
-                  className="flex flex-col gap-3 rounded-2xl border bg-white px-4 py-4 md:flex-row md:items-center md:justify-between"
-                >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <div className="truncate text-sm font-semibold text-gray-900">
-                        Slot {index + 1}: {d.fileName ?? d.path}
-                      </div>
-                      <span className={statusBadge(d.status)}>
-                        {d.status.replaceAll("_", " ")}
-                      </span>
-                      <span className={reviewBadge(d.brandStatus)}>
-                        Brand review: {d.brandStatus.replaceAll("_", " ")}
-                      </span>
-                    </div>
-
-                    <div className="mt-1 text-xs text-gray-500">
-                      {d.mimeType ?? "—"} • {formatBytes(d.sizeBytes)} •{" "}
-                      {new Date(d.createdAt).toLocaleString()}
-                    </div>
-
-                    {d.brandFeedback ? (
-                      <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                        <div className="font-semibold">Your feedback</div>
-                        <div className="mt-1 whitespace-pre-wrap">{d.brandFeedback}</div>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className="shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => router.push(`/brand/briefs/${brief.id}/deliverables/${d.id}`)}
-                      className="rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50"
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Deadline</label>
+                  <div className="mt-2">
+                    <select
+                      value={deadline}
+                      onChange={(e) => setDeadline(e.target.value)}
+                      className="w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-emerald-950/20"
                     >
-                      Open review
-                    </button>
+                      <option value="">Keine Deadline</option>
+                      <option value="7">7 Tage</option>
+                      <option value="14">14 Tage</option>
+                      <option value="30">30 Tage</option>
+                      <option value="60">60 Tage</option>
+                    </select>
                   </div>
                 </div>
-              ))}
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Anzahl Videos</label>
+                  <div className="mt-2">
+                    <select
+                      value={String(deliverableCount)}
+                      onChange={(e) => setDeliverableCount(Number(e.target.value))}
+                      className="w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-emerald-950/20"
+                    >
+                      <option value="1">1 Video</option>
+                      <option value="2">2 Videos</option>
+                      <option value="3">3 Videos</option>
+                      <option value="4">4 Videos</option>
+                      <option value="5">5 Videos</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Lizenz</label>
+                  <div className="mt-2">
+                    <select
+                      className="w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-emerald-950/20"
+                      value={licenseTerm}
+                      onChange={(e) => setLicenseTerm(e.target.value as LicenseLabel)}
+                    >
+                      {LICENSE_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {licenseLabel(opt)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+          </Section>
+
+          <Section title="Kampagnenbeschreibung" subtitle="Ziele, Deliverables, Do’s & Don’ts">
+            <label className="text-sm font-medium text-gray-700">
+              Beschreibung <span className="text-gray-400">(optional)</span>
+            </label>
+            <div className="mt-2">
+              <Textarea
+                className="min-h-[220px]"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Beschreibe dein Briefing klar: Hooks, Blickwinkel, Deliverables, Beispiele..."
+              />
+            </div>
+          </Section>
+
+          <Section
+            title="Ziel-Nischen"
+            subtitle="Wähle zuerst eine Nischengruppe und danach bis zu 5 Unter-Nischen."
+            right={
+              <div className="flex items-center gap-3">
+                <span className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700">
+                  {nichesHint}
+                </span>
+                <button
+                  type="button"
+                  onClick={clearNiches}
+                  className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-900 hover:bg-gray-50"
+                >
+                  Leeren
+                </button>
+              </div>
+            }
+          >
+            <div>
+              <div className="text-xs font-semibold text-gray-600">Nischengruppen</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {groups.map((g) => {
+                  const active = g === activeGroup;
+                  return (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setActiveGroup(g)}
+                      className={
+                        active
+                          ? "rounded-full bg-emerald-950 px-4 py-2 text-xs font-semibold text-white"
+                          : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50"
+                      }
+                    >
+                      {g}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-2xl border bg-white p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="text-xs font-semibold text-gray-600">
+                  {activeGroup} – Unter-Nischen
+                </div>
+                <div className="text-xs text-gray-500">max. 5</div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {activeSubs.map((n) => {
+                  const selected = selectedNiches.includes(n);
+                  const disabled = !selected && selectedNiches.length >= 5;
+
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => toggleNiche(n)}
+                      disabled={disabled}
+                      className={
+                        selected
+                          ? "rounded-full bg-emerald-950 px-4 py-2 text-xs font-semibold text-white"
+                          : disabled
+                          ? "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-400 opacity-60"
+                          : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50"
+                      }
+                      title={disabled ? "Maximal 5 ausgewählt" : undefined}
+                    >
+                      {n}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {selectedNiches.length > 0 ? (
+                <div className="mt-5">
+                  <div className="text-xs font-semibold text-gray-600">Ausgewählt</div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {selectedNiches.map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => toggleNiche(n)}
+                        className="rounded-full bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white"
+                        title="Klicken zum Entfernen"
+                      >
+                        {n} ×
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </Section>
+
+          <Section
+            title="Briefing-Dateien hochladen"
+            subtitle="Optional – du kannst Dateien jetzt oder später hochladen"
+            right={
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50"
+              >
+                Dateien hinzufügen
+              </button>
+            }
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => onPickFiles(e.target.files)}
+              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+            />
+
+            <div className="rounded-2xl border bg-white p-4">
+              <div className="text-xs font-semibold text-gray-600">Upload-Warteschlange</div>
+
+              {files.length === 0 ? (
+                <div className="mt-3 text-sm leading-6 text-gray-500">
+                  Keine Dateien ausgewählt. Klicke auf{" "}
+                  <span className="font-semibold">Dateien hinzufügen</span>.
+                </div>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {files.map((f, idx) => (
+                    <div
+                      key={`${f.name}-${f.size}-${idx}`}
+                      className="flex flex-col gap-3 rounded-xl border bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium text-gray-900">{f.name}</div>
+                        <div className="text-xs text-gray-500">{bytesToMb(f.size)}</div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removeFile(idx)}
+                        className="rounded-full border px-3 py-1 text-xs font-semibold hover:bg-gray-50"
+                      >
+                        Entfernen
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className="mt-3 text-xs text-gray-500">Max. 10 Dateien • bis zu 50 MB pro Datei</p>
+            </div>
+          </Section>
+
+          <div className="sticky bottom-4 rounded-3xl border bg-white/95 p-4 shadow-sm backdrop-blur">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="text-sm text-gray-600">
+                {uploading ? "Dateien werden hochgeladen..." : saving ? "Wird gespeichert..." : "Bereit"}
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={onSubmit}
+                  disabled={!canSubmit}
+                  className="w-full rounded-full bg-emerald-950 px-8 py-3 text-sm font-semibold text-white shadow hover:opacity-95 disabled:opacity-50 sm:w-auto"
+                >
+                  {saving
+                    ? uploading
+                      ? "Upload läuft..."
+                      : "Wird gespeichert..."
+                    : "Briefing einreichen"}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
