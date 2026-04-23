@@ -11,14 +11,17 @@ export const metadata: Metadata = {
   description: "UGC Platform",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en">
+    <html lang="de">
       <body>
         <Navbar />
         <NotificationBell />
-        <LegalAcceptanceGate children={undefined} />
-        {children}
+        <LegalAcceptanceGate>{children}</LegalAcceptanceGate>
         <Footer />
       </body>
     </html>
