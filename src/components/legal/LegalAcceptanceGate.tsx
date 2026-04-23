@@ -2,23 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { LEGAL_VERSIONS } from "@/lib/legal";
 import { usePathname, useRouter } from "next/navigation";
 
-type Role = "BRAND" | "CREATOR" | "STAFF";
-
-type MeResponse = {
-  user?: {
-    id: string;
-    email: string;
-    role: Role;
-    termsVersion?: string | null;
-    privacyVersion?: string | null;
-    agbVersion?: string | null;
-    termsAcceptedAt?: string | null;
-    privacyAcceptedAt?: string | null;
-    agbAcceptedAt?: string | null;
+type LegalStatusResponse = {
+  ok?: boolean;
+  legal?: {
+    role: "BRAND" | "CREATOR" | null;
+    requiresAcceptance: boolean;
   };
+  error?: string;
 };
 
 export default function LegalAcceptanceGate({
@@ -61,46 +53,34 @@ export default function LegalAcceptanceGate({
         return;
       }
 
-      const res = await fetch("/api/me", {
+      const res = await fetch("/api/me/legal-status", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
         cache: "no-store",
       });
 
-      const json = (await res.json()) as MeResponse;
-      const user = json?.user;
+      const json = (await res.json()) as LegalStatusResponse;
 
-      if (!user) {
+      if (!res.ok || !json?.ok || !json.legal) {
         setAllowed(true);
         setLoading(false);
         return;
       }
 
-      if (user.role === "STAFF") {
+      const legal = json.legal;
+
+      if (!legal.role || !legal.requiresAcceptance) {
         setAllowed(true);
         setLoading(false);
         return;
       }
 
-      const expected =
-        user.role === "BRAND" ? LEGAL_VERSIONS.BRAND : LEGAL_VERSIONS.CREATOR;
+      const target = `/legal/${legal.role.toLowerCase()}`;
 
-      const isAccepted =
-        user.termsVersion === expected.termsVersion &&
-        user.privacyVersion === expected.privacyVersion &&
-        user.agbVersion === expected.agbVersion &&
-        !!user.termsAcceptedAt &&
-        !!user.privacyAcceptedAt &&
-        !!user.agbAcceptedAt;
-
-      if (!isAccepted) {
-        const target = `/legal/${user.role.toLowerCase()}`;
-
-        if (pathname !== target) {
-          router.push(target);
-          return;
-        }
+      if (pathname !== target) {
+        router.replace(target);
+        return;
       }
 
       setAllowed(true);

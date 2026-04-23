@@ -13,6 +13,7 @@ function dashboardFor(role: Role) {
 
 export default function LegalAcceptBar({ role }: { role: Role }) {
   const router = useRouter();
+
   const [checked, setChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,13 +32,16 @@ export default function LegalAcceptBar({ role }: { role: Role }) {
       setError(null);
 
       if (!checked) {
-        throw new Error("Please confirm that you have read and accept all legal documents.");
+        throw new Error(
+          "Please confirm that you have read and accept all legal documents."
+        );
       }
 
       if (!supabase) {
         throw new Error("Supabase environment variables are missing.");
       }
 
+      // 🔐 Session holen
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
 
@@ -45,6 +49,7 @@ export default function LegalAcceptBar({ role }: { role: Role }) {
         throw new Error("You are not logged in.");
       }
 
+      // ✅ API Call
       const res = await fetch("/api/legal/accept", {
         method: "POST",
         headers: {
@@ -66,11 +71,17 @@ export default function LegalAcceptBar({ role }: { role: Role }) {
       } catch {}
 
       if (!res.ok) {
-        throw new Error(json?.error ?? text ?? "Could not accept legal documents.");
+        throw new Error(
+          json?.error ?? text ?? "Could not accept legal documents."
+        );
       }
 
-      router.push(dashboardFor(role));
+      // 🔥 WICHTIG: Refresh + Redirect (fix für Loop)
       router.refresh();
+
+      setTimeout(() => {
+        router.replace(dashboardFor(role));
+      }, 150);
     } catch (err: any) {
       setError(err?.message ?? "Could not accept legal documents.");
     } finally {
@@ -88,7 +99,8 @@ export default function LegalAcceptBar({ role }: { role: Role }) {
           className="mt-1"
         />
         <span>
-          I have read and accept the current Terms of Service, Privacy Policy and AGB.
+          I have read and accept the current Terms of Service, Privacy Policy
+          and AGB.
         </span>
       </label>
 
@@ -103,7 +115,7 @@ export default function LegalAcceptBar({ role }: { role: Role }) {
           type="button"
           onClick={handleAccept}
           disabled={loading || !checked}
-          className="rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+          className="w-full rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
         >
           {loading ? "Saving..." : "Accept and continue"}
         </button>
