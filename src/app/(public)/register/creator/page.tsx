@@ -6,21 +6,6 @@ import { useState } from "react";
 import AuthShell from "@/components/auth/AuthShell";
 import { supabase } from "@/lib/supabaseClient";
 
-const NICHE_GROUPS = {
-  "Beauty & Skincare": ["Hautpflege", "Make-up", "Anti-Aging", "Naturkosmetik"],
-  "Fitness & Gesundheit": ["Supplements", "Home Workouts", "Fitness-Programme", "Abnehmprodukte", "Biohacking"],
-  Fashion: ["Streetwear", "Sportbekleidung", "Schmuck", "Taschen", "Sneaker"],
-  "Tech & Gadgets": ["Smartphones & Zubehör", "Gimbals", "Kameras", "Smartwatches", "KI-Tools & Apps"],
-  "Home & Living": ["Einrichtung", "Küchengadgets", "Haushaltshelfer", "DIY-Produkte", "Dekoration"],
-  "Food & Getränke": ["Proteinprodukte", "Kaffee-Marken", "Energy Drinks", "Süßigkeiten", "Kochboxen"],
-  "Persönlichkeitsentwicklung & Coaching": ["Online-Kurse", "Trading", "Mindset", "Dating-Coaching", "Business-Coaching"],
-  "Finanzen & Versicherungen": ["Investment-Apps", "Kryptowährungen", "Versicherungen", "Kreditkarten"],
-  Haustiere: ["Hundefutter", "Katzenzubehör", "Spielzeug", "Pflegeprodukte"],
-  "Reisen & Lifestyle": ["Reisegadgets", "Hotels", "Koffer", "Camper", "Auslandsversicherungen"],
-} as const;
-
-type NicheGroup = keyof typeof NICHE_GROUPS;
-
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
@@ -67,10 +52,11 @@ export default function CreatorRegisterPage() {
   const router = useRouter();
 
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [country, setCountry] = useState("");
-  const [nicheGroup, setNicheGroup] = useState<NicheGroup>("Beauty & Skincare");
+  const [countryCode, setCountryCode] = useState("+49");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [portfolio, setPortfolio] = useState("");
 
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
 
@@ -83,17 +69,19 @@ export default function CreatorRegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const inputClassName =
+    "w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-black focus:ring-2 focus:ring-black/10";
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!fullName.trim()) return setError("Please enter your full name.");
-    if (!email.trim()) return setError("Please enter your email.");
-    if (!nicheGroup) return setError("Please choose your niche group.");
-    if (password.length < 6) return setError("Password must be at least 6 characters.");
-    if (password !== confirm) return setError("Passwords do not match.");
+    if (!fullName.trim()) return setError("Bitte gib deinen Namen ein.");
+    if (!email.trim()) return setError("Bitte gib deine E-Mail-Adresse ein.");
+    if (password.length < 6) return setError("Das Passwort muss mindestens 6 Zeichen lang sein.");
+    if (password !== confirm) return setError("Die Passwörter stimmen nicht überein.");
     if (!agreeTos || !agreePrivacy) {
-      return setError("Please accept the Terms and Privacy Policy.");
+      return setError("Bitte akzeptiere die Nutzungsbedingungen und die Datenschutzerklärung.");
     }
 
     setLoading(true);
@@ -108,8 +96,8 @@ export default function CreatorRegisterPage() {
           data: {
             role,
             fullName: fullName.trim(),
-            country: country.trim() || null,
-            nicheGroup,
+            phone: `${countryCode} ${phoneNumber}`.trim(),
+            portfolioUrl: portfolio.trim() || null,
             acceptedTerms: true,
             acceptedPrivacy: true,
           },
@@ -140,29 +128,11 @@ export default function CreatorRegisterPage() {
         if (!syncRes.ok) {
           throw new Error((syncData.json as any)?.error ?? syncData.text.slice(0, 200));
         }
-
-        const sessionRes = await supabase.auth.getSession();
-        const token = sessionRes.data.session?.access_token;
-
-        if (token) {
-          await fetch("/api/creator/profile", {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              fullName: fullName.trim(),
-              country: country.trim() || null,
-              nicheGroup,
-            }),
-          });
-        }
       }
 
       router.push("/register/success?role=creator");
     } catch (e: any) {
-      setError(e?.message ?? "Registration failed");
+      setError(e?.message ?? "Registrierung fehlgeschlagen");
     } finally {
       setLoading(false);
     }
@@ -171,57 +141,73 @@ export default function CreatorRegisterPage() {
   return (
     <AuthShell>
       <div className="mx-auto max-w-[760px] text-center">
-        <h1 className="font-serif text-5xl tracking-tight text-gray-900">
-          Create Creator Account
+        <h1 className="font-serif text-4xl tracking-tight text-gray-900 sm:text-5xl">
+          Creator-Konto erstellen
         </h1>
-        <p className="mt-3 text-gray-600">
-          Create your account first. After email confirmation you complete your profile, intro video and uploads.
+
+        <p className="mt-3 text-sm leading-6 text-gray-600 sm:text-base">
+          Erstelle zuerst dein Konto. Dein Profil kannst du nach der E-Mail-Bestätigung vervollständigen.
         </p>
 
-        <form onSubmit={onSubmit} className="mt-10 text-left">
+        <form onSubmit={onSubmit} className="mt-8 text-left sm:mt-10">
           <div className="space-y-4">
             <input
-              className="w-full rounded-xl border bg-white/80 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-emerald-900/30"
-              placeholder="Full name"
+              className={inputClassName}
+              placeholder="Vollständiger Name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
             />
 
             <div className="grid gap-4 md:grid-cols-2">
               <input
-                className="w-full rounded-xl border bg-white/80 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-emerald-900/30"
+                className={inputClassName}
                 type="email"
-                placeholder="Email"
+                placeholder="E-Mail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                inputMode="email"
               />
 
               <input
-                className="w-full rounded-xl border bg-white/80 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-emerald-900/30"
-                placeholder="Country"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
+                className={inputClassName}
+                placeholder="Portfolio / Instagram / Website (optional)"
+                value={portfolio}
+                onChange={(e) => setPortfolio(e.target.value)}
               />
             </div>
 
-            <select
-              className="w-full rounded-xl border bg-white/80 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-emerald-900/30"
-              value={nicheGroup}
-              onChange={(e) => setNicheGroup(e.target.value as NicheGroup)}
-            >
-              {Object.keys(NICHE_GROUPS).map((group) => (
-                <option key={group} value={group}>
-                  {group}
-                </option>
-              ))}
-            </select>
+            <div className="grid grid-cols-[96px_1fr] gap-3">
+              <select
+                className={inputClassName}
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+              >
+                <option value="+1">+1</option>
+                <option value="+44">+44</option>
+                <option value="+49">+49</option>
+                <option value="+33">+33</option>
+                <option value="+39">+39</option>
+                <option value="+34">+34</option>
+                <option value="+31">+31</option>
+                <option value="+43">+43</option>
+                <option value="+41">+41</option>
+              </select>
+
+              <input
+                className={inputClassName}
+                placeholder="Telefonnummer"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                inputMode="tel"
+              />
+            </div>
 
             <div className="relative">
               <input
-                className="w-full rounded-xl border bg-white/80 px-4 py-3 pr-12 text-base outline-none focus:ring-2 focus:ring-emerald-900/30"
+                className={`${inputClassName} pr-12`}
                 type={showPw ? "text" : "password"}
-                placeholder="Password"
+                placeholder="Passwort"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
@@ -238,9 +224,9 @@ export default function CreatorRegisterPage() {
 
             <div className="relative">
               <input
-                className="w-full rounded-xl border bg-white/80 px-4 py-3 pr-12 text-base outline-none focus:ring-2 focus:ring-emerald-900/30"
+                className={`${inputClassName} pr-12`}
                 type={showConfirm ? "text" : "password"}
-                placeholder="Confirm password"
+                placeholder="Passwort bestätigen"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 autoComplete="new-password"
@@ -256,46 +242,42 @@ export default function CreatorRegisterPage() {
             </div>
 
             <div className="space-y-3 pt-2">
-              <label className="flex items-center gap-3 text-sm text-gray-700">
+              <label className="flex items-start gap-3 text-sm leading-6 text-gray-700">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="mt-1 h-4 w-4 rounded border-gray-300"
                   checked={agreeTos}
                   onChange={(e) => setAgreeTos(e.target.checked)}
                 />
                 <span>
-                  I agree to the{" "}
-                  <Link className="underline" href="/terms/creator">
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link className="underline" href="/agb/creator">
-                    AGB
+                  Ich akzeptiere die{" "}
+                  <Link className="underline" href="/legal/creator">
+                    Nutzungsbedingungen und AGB
                   </Link>
                 </span>
               </label>
 
-              <label className="flex items-center gap-3 text-sm text-gray-700">
+              <label className="flex items-start gap-3 text-sm leading-6 text-gray-700">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="mt-1 h-4 w-4 rounded border-gray-300"
                   checked={agreePrivacy}
                   onChange={(e) => setAgreePrivacy(e.target.checked)}
                 />
                 <span>
-                  I agree to the{" "}
-                  <Link className="underline" href="/privacy/creator">
-                    Privacy Policy
+                  Ich akzeptiere die{" "}
+                  <Link className="underline" href="/legal/creator">
+                    Datenschutzerklärung
                   </Link>
                 </span>
               </label>
             </div>
 
-            {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
                 {error}
               </div>
-            )}
+            ) : null}
 
             <div className="pt-4">
               <button
@@ -303,14 +285,14 @@ export default function CreatorRegisterPage() {
                 disabled={loading}
                 className="mx-auto block w-full max-w-[360px] rounded-xl bg-emerald-950 px-4 py-3 text-base font-medium text-white shadow hover:opacity-95 disabled:opacity-60"
               >
-                {loading ? "Creating account..." : "Create creator account"}
+                {loading ? "Konto wird erstellt..." : "Creator-Konto erstellen"}
               </button>
             </div>
 
-            <p className="pt-4 text-center text-gray-700">
-              Want to join as brand?{" "}
+            <p className="pt-4 text-center text-sm leading-6 text-gray-700 sm:text-base">
+              Du möchtest als Brand beitreten?{" "}
               <Link className="font-medium underline" href="/register/brand">
-                Switch to brand signup
+                Zum Brand-Login wechseln
               </Link>
             </p>
           </div>

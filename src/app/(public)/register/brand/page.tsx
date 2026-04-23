@@ -70,17 +70,20 @@ export default function BrandRegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const inputClassName =
+    "w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-black focus:ring-2 focus:ring-black/10";
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!companyName.trim()) return setError("Please enter your company name.");
-    if (!contactPerson.trim()) return setError("Please enter a contact person.");
-    if (!email.trim()) return setError("Please enter your business email.");
-    if (password.length < 6) return setError("Password must be at least 6 characters.");
-    if (password !== confirm) return setError("Passwords do not match.");
+    if (!companyName.trim()) return setError("Bitte gib deinen Firmennamen ein.");
+    if (!contactPerson.trim()) return setError("Bitte gib eine Ansprechperson ein.");
+    if (!email.trim()) return setError("Bitte gib deine geschäftliche E-Mail-Adresse ein.");
+    if (password.length < 6) return setError("Das Passwort muss mindestens 6 Zeichen lang sein.");
+    if (password !== confirm) return setError("Die Passwörter stimmen nicht überein.");
     if (!agreeTos || !agreePrivacy) {
-      return setError("Please accept the Terms and Privacy Policy.");
+      return setError("Bitte akzeptiere die Nutzungsbedingungen und die Datenschutzerklärung.");
     }
 
     setLoading(true);
@@ -132,7 +135,7 @@ export default function BrandRegisterPage() {
 
       router.push("/register/success?role=brand");
     } catch (e: any) {
-      setError(e?.message ?? "Registration failed");
+      setError(e?.message ?? "Registrierung fehlgeschlagen");
     } finally {
       setLoading(false);
     }
@@ -141,41 +144,43 @@ export default function BrandRegisterPage() {
   return (
     <AuthShell>
       <div className="mx-auto max-w-[760px] text-center">
-        <h1 className="font-serif text-5xl tracking-tight text-gray-900">
-          Create Brand Account
+        <h1 className="font-serif text-4xl tracking-tight text-gray-900 sm:text-5xl">
+          Brand-Konto erstellen
         </h1>
-        <p className="mt-3 text-gray-600">
-          Create your account first. You can complete the rest after email confirmation.
+
+        <p className="mt-3 text-sm leading-6 text-gray-600 sm:text-base">
+          Erstelle zuerst dein Konto. Den Rest kannst du nach der E-Mail-Bestätigung vervollständigen.
         </p>
 
-        <form onSubmit={onSubmit} className="mt-10 text-left">
+        <form onSubmit={onSubmit} className="mt-8 text-left sm:mt-10">
           <div className="space-y-4">
             <input
-              className="w-full rounded-xl border bg-white/80 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-emerald-900/30"
-              placeholder="Company name"
+              className={inputClassName}
+              placeholder="Firmenname"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
             />
 
             <input
-              className="w-full rounded-xl border bg-white/80 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-emerald-900/30"
-              placeholder="Contact person"
+              className={inputClassName}
+              placeholder="Ansprechperson"
               value={contactPerson}
               onChange={(e) => setContactPerson(e.target.value)}
             />
 
             <div className="grid gap-4 md:grid-cols-2">
               <input
-                className="w-full rounded-xl border bg-white/80 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-emerald-900/30"
+                className={inputClassName}
                 type="email"
-                placeholder="Business email"
+                placeholder="Geschäftliche E-Mail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                inputMode="email"
               />
 
               <input
-                className="w-full rounded-xl border bg-white/80 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-emerald-900/30"
+                className={inputClassName}
                 placeholder="Website (optional)"
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
@@ -184,7 +189,7 @@ export default function BrandRegisterPage() {
 
             <div className="grid grid-cols-[96px_1fr] gap-3">
               <select
-                className="w-full rounded-xl border bg-white/80 px-3 py-3 text-base outline-none focus:ring-2 focus:ring-emerald-900/30"
+                className={inputClassName}
                 value={countryCode}
                 onChange={(e) => setCountryCode(e.target.value)}
               >
@@ -200,8 +205,8 @@ export default function BrandRegisterPage() {
               </select>
 
               <input
-                className="w-full rounded-xl border bg-white/80 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-emerald-900/30"
-                placeholder="Phone number"
+                className={inputClassName}
+                placeholder="Telefonnummer"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 inputMode="tel"
@@ -210,9 +215,9 @@ export default function BrandRegisterPage() {
 
             <div className="relative">
               <input
-                className="w-full rounded-xl border bg-white/80 px-4 py-3 pr-12 text-base outline-none focus:ring-2 focus:ring-emerald-900/30"
+                className={`${inputClassName} pr-12`}
                 type={showPw ? "text" : "password"}
-                placeholder="Password"
+                placeholder="Passwort"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
@@ -229,9 +234,9 @@ export default function BrandRegisterPage() {
 
             <div className="relative">
               <input
-                className="w-full rounded-xl border bg-white/80 px-4 py-3 pr-12 text-base outline-none focus:ring-2 focus:ring-emerald-900/30"
+                className={`${inputClassName} pr-12`}
                 type={showConfirm ? "text" : "password"}
-                placeholder="Confirm password"
+                placeholder="Passwort bestätigen"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 autoComplete="new-password"
@@ -247,46 +252,42 @@ export default function BrandRegisterPage() {
             </div>
 
             <div className="space-y-3 pt-2">
-              <label className="flex items-center gap-3 text-sm text-gray-700">
+              <label className="flex items-start gap-3 text-sm leading-6 text-gray-700">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="mt-1 h-4 w-4 rounded border-gray-300"
                   checked={agreeTos}
                   onChange={(e) => setAgreeTos(e.target.checked)}
                 />
                 <span>
-                  I agree to the{" "}
-                  <Link className="underline" href="/terms/brand">
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link className="underline" href="/agb/brand">
-                    AGB
+                  Ich akzeptiere die{" "}
+                  <Link className="underline" href="/legal/brand">
+                    Nutzungsbedingungen und AGB
                   </Link>
                 </span>
               </label>
 
-              <label className="flex items-center gap-3 text-sm text-gray-700">
+              <label className="flex items-start gap-3 text-sm leading-6 text-gray-700">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="mt-1 h-4 w-4 rounded border-gray-300"
                   checked={agreePrivacy}
                   onChange={(e) => setAgreePrivacy(e.target.checked)}
                 />
                 <span>
-                  I agree to the{" "}
-                  <Link className="underline" href="/privacy/brand">
-                    Privacy Policy
+                  Ich akzeptiere die{" "}
+                  <Link className="underline" href="/legal/brand">
+                    Datenschutzerklärung
                   </Link>
                 </span>
               </label>
             </div>
 
-            {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
                 {error}
               </div>
-            )}
+            ) : null}
 
             <div className="pt-4">
               <button
@@ -294,14 +295,14 @@ export default function BrandRegisterPage() {
                 disabled={loading}
                 className="mx-auto block w-full max-w-[360px] rounded-xl bg-emerald-950 px-4 py-3 text-base font-medium text-white shadow hover:opacity-95 disabled:opacity-60"
               >
-                {loading ? "Creating account..." : "Create brand account"}
+                {loading ? "Konto wird erstellt..." : "Brand-Konto erstellen"}
               </button>
             </div>
 
-            <p className="pt-4 text-center text-gray-700">
-              Want to join as creator?{" "}
+            <p className="pt-4 text-center text-sm leading-6 text-gray-700 sm:text-base">
+              Du möchtest als Creator beitreten?{" "}
               <Link className="font-medium underline" href="/register/creator">
-                Switch to creator signup
+                Zum Creator-Login wechseln
               </Link>
             </p>
           </div>
