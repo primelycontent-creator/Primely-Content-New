@@ -11,6 +11,10 @@ const supabase = createClient(
 export default function BrandProfilePage() {
   const [form, setForm] = useState<any>({});
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const inputClassName =
+    "w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-black focus:ring-2 focus:ring-black/10";
 
   async function load() {
     const { data } = await supabase.auth.getSession();
@@ -18,6 +22,7 @@ export default function BrandProfilePage() {
 
     const res = await fetch("/api/brand/profile", {
       headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
     });
 
     const json = await res.json();
@@ -30,62 +35,84 @@ export default function BrandProfilePage() {
   }, []);
 
   async function save() {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
+    try {
+      setSaving(true);
 
-    await fetch("/api/brand/profile", {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(form),
-    });
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
 
-    alert("Saved");
+      await fetch("/api/brand/profile", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(form),
+      });
+
+      alert("Profil gespeichert");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  if (loading) return <div className="p-8">Loading...</div>;
+  if (loading) {
+    return <div className="p-6 text-sm text-gray-600 sm:p-8">Profil wird geladen...</div>;
+  }
 
   return (
-    <div className="p-8">
-      <div className="max-w-2xl space-y-4 rounded-3xl border bg-white p-8">
-        <h1 className="text-2xl font-semibold">Brand Profile</h1>
+    <div className="px-4 py-6 sm:p-8">
+      <div className="mx-auto max-w-2xl rounded-3xl border bg-white p-5 shadow-sm sm:p-8">
+        <h1 className="font-serif text-4xl tracking-tight text-gray-900 sm:text-5xl">
+          Brand-Profil
+        </h1>
 
-        <input
-          placeholder="Company Name"
-          value={form.companyName || ""}
-          onChange={(e) => setForm({ ...form, companyName: e.target.value })}
-          className="w-full rounded-xl border px-4 py-3"
-        />
+        <p className="mt-3 text-sm leading-6 text-gray-600">
+          Diese Informationen werden für deine Briefings und die Kommunikation mit unserem Team genutzt.
+        </p>
 
-        <input
-          placeholder="Contact Name"
-          value={form.contactName || ""}
-          onChange={(e) => setForm({ ...form, contactName: e.target.value })}
-          className="w-full rounded-xl border px-4 py-3"
-        />
+        <div className="mt-8 space-y-4">
+          <input
+            placeholder="Firmenname"
+            value={form.companyName || ""}
+            onChange={(e) => setForm({ ...form, companyName: e.target.value })}
+            className={inputClassName}
+          />
 
-        <input
-          placeholder="Email"
-          value={form.contactEmail || ""}
-          onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
-          className="w-full rounded-xl border px-4 py-3"
-        />
+          <input
+            placeholder="Ansprechperson"
+            value={form.contactName || ""}
+            onChange={(e) => setForm({ ...form, contactName: e.target.value })}
+            className={inputClassName}
+          />
 
-        <input
-          placeholder="Phone"
-          value={form.contactPhone || ""}
-          onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
-          className="w-full rounded-xl border px-4 py-3"
-        />
+          <input
+            type="email"
+            placeholder="E-Mail"
+            value={form.contactEmail || ""}
+            onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
+            className={inputClassName}
+            autoComplete="email"
+            inputMode="email"
+          />
 
-        <button
-          onClick={save}
-          className="rounded-full bg-black px-6 py-3 text-white"
-        >
-          Save
-        </button>
+          <input
+            placeholder="Telefon"
+            value={form.contactPhone || ""}
+            onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
+            className={inputClassName}
+            inputMode="tel"
+          />
+
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="w-full rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60 sm:w-auto"
+          >
+            {saving ? "Wird gespeichert..." : "Speichern"}
+          </button>
+        </div>
       </div>
     </div>
   );
