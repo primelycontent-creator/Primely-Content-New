@@ -10,9 +10,27 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-type Role = "BRAND" | "CREATOR";
+type Role = "BRAND" | "CREATOR" | "STAFF";
 
-export default function LegalAcceptanceGate({ children }: { children: React.ReactNode }) {
+type MeResponse = {
+  user?: {
+    id: string;
+    email: string;
+    role: Role;
+    termsVersion?: string | null;
+    privacyVersion?: string | null;
+    agbVersion?: string | null;
+    termsAcceptedAt?: string | null;
+    privacyAcceptedAt?: string | null;
+    agbAcceptedAt?: string | null;
+  };
+};
+
+export default function LegalAcceptanceGate({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [loading, setLoading] = useState(true);
   const [allowed, setAllowed] = useState(false);
   const router = useRouter();
@@ -20,56 +38,68 @@ export default function LegalAcceptanceGate({ children }: { children: React.Reac
 
   useEffect(() => {
     checkLegal();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   async function checkLegal() {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
 
-    if (!token) {
-      setAllowed(true); // nicht eingeloggt → kein block
-      setLoading(false);
-      return;
-    }
-
-    const res = await fetch("/api/me", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const json = await res.json();
-    const user = json?.user;
-
-    if (!user) {
-      setAllowed(true);
-      setLoading(false);
-      return;
-    }
-
-    const role: Role = user.role;
-    const acceptance = user.legalAcceptance;
-
-    const expected =
-      role === "BRAND"
-        ? LEGAL_VERSIONS.BRAND
-        : LEGAL_VERSIONS.CREATOR;
-
-    const isAccepted =
-      acceptance?.termsVersion === expected.termsVersion &&
-      acceptance?.privacyVersion === expected.privacyVersion &&
-      acceptance?.agbVersion === expected.agbVersion;
-
-    if (!isAccepted) {
-      // 🚨 redirect wenn NICHT auf legal page
-      if (!pathname.startsWith("/legal")) {
-        router.push(`/legal/terms/${role.toLowerCase()}`);
+      if (!token) {
+        setAllowed(true);
+        setLoading(false);
         return;
       }
-    }
 
-    setAllowed(true);
-    setLoading(false);
+      const res = await fetch("/api/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
+
+      const json = (await res.json()) as MeResponse;
+      const user = json?.user;
+
+      if (!user) {
+        setAllowed(true);
+        setLoading(false);
+        return;
+      }
+
+      // STAFF soll keinen Legal-Redirect bekommen
+      if (user.role === "STAFF") {
+        setAllowed(true);
+        setLoading(false);
+        return;
+      }
+
+      const role = user.role; // nur BRAND oder CREATOR relevant
+      const expected =
+        role === "BRAND" ? LEGAL_VERSIONS.BRAND : LEGAL_VERSIONS.CREATOR;
+
+      const isAccepted =
+        user.termsVersion === expected.termsVersion &&
+        user.privacyVersion === expected.privacyVersion &&
+        user.agbVersion === expected.agbVersion &&
+        !!user.termsAcceptedAt &&
+        !!user.privacyAcceptedAt &&
+        !!user.agbAcceptedAt;
+
+      if (!isAccepted) {
+        if (!pathname.startsWith("/legal")) {
+          router.push(`/legal/terms/${role.toLowerCase()}`);
+          return;
+        }
+      }
+
+      setAllowed(true);
+      setLoading(false);
+    } catch {
+      setAllowed(true);
+      setLoading(false);
+    }
   }
 
   if (loading) return null;
