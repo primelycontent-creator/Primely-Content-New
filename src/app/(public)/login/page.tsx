@@ -37,6 +37,15 @@ function isAllowedNext(next: string | null, role: Role) {
   return false;
 }
 
+async function readSafeJson(res: Response) {
+  const text = await res.text();
+  try {
+    return { json: JSON.parse(text), text };
+  } catch {
+    return { json: null, text };
+  }
+}
+
 function LoginPageContent() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
@@ -50,10 +59,7 @@ function LoginPageContent() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!url || !anonKey) {
-      return null;
-    }
-
+    if (!url || !anonKey) return null;
     return createClient(url, anonKey);
   }, []);
 
@@ -85,10 +91,19 @@ function LoginPageContent() {
         cache: "no-store",
       });
 
-      const meJson = (await meRes.json()) as MeResponse;
+      const { json, text } = await readSafeJson(meRes);
+      const meJson = json as MeResponse | null;
 
-      if (!meRes.ok || !("ok" in meJson) || !meJson.ok) {
-        throw new Error("Could not load your account role.");
+      if (!meRes.ok) {
+        const backendError =
+          meJson && "error" in meJson
+            ? meJson.error
+            : text || `Request failed with status ${meRes.status}`;
+        throw new Error(backendError);
+      }
+
+      if (!meJson || !("ok" in meJson) || !meJson.ok) {
+        throw new Error("Invalid /api/me response");
       }
 
       const finalRole = meJson.user.role;
