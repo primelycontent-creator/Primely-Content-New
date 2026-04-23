@@ -4,6 +4,7 @@ import {
   normalizeLegalRole,
   type LegalDocType,
 } from "@/lib/legal";
+import LegalAcceptBar from "./legalAcceptBar";
 
 type Params = Promise<{
   type: string;
@@ -78,6 +79,8 @@ export default async function LegalDocumentPage({
             </section>
           ))}
         </div>
+
+        <LegalAcceptBar role={role as "brand" | "creator"} />
       </div>
     </div>
   );
