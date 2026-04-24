@@ -39,15 +39,6 @@ function EyeIcon({ open }: { open: boolean }) {
   );
 }
 
-async function readSafeJson(res: Response) {
-  const text = await res.text();
-  try {
-    return { json: JSON.parse(text), text };
-  } catch {
-    return { json: null, text };
-  }
-}
-
 export default function CreatorRegisterPage() {
   const router = useRouter();
 
@@ -90,10 +81,10 @@ export default function CreatorRegisterPage() {
       const role = "CREATOR";
 
       const { error: signUpError } = await supabase.auth.signUp({
-        email,
+        email: email.trim(),
         password,
         options: {
-          emailRedirectTo: "https://www.primely-content.com/login",
+          emailRedirectTo: "https://www.primely-content.com/auth/callback",
           data: {
             role,
             fullName: fullName.trim(),
@@ -109,26 +100,6 @@ export default function CreatorRegisterPage() {
         setError(signUpError.message);
         setLoading(false);
         return;
-      }
-
-      const { data: userRes } = await supabase.auth.getUser();
-      const user = userRes.user;
-
-      if (user?.id && user.email) {
-        const syncRes = await fetch("/api/auth/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: user.id,
-            email: user.email,
-            role,
-          }),
-        });
-
-        const syncData = await readSafeJson(syncRes);
-        if (!syncRes.ok) {
-          throw new Error((syncData.json as any)?.error ?? syncData.text.slice(0, 200));
-        }
       }
 
       router.push("/register/success?role=creator");

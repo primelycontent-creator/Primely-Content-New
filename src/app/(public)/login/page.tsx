@@ -7,48 +7,14 @@ import { createClient } from "@supabase/supabase-js";
 
 type Role = "BRAND" | "CREATOR" | "STAFF";
 
-type MeResponse =
-  | {
-      ok: true;
-      user: {
-        id: string;
-        email: string;
-        role: Role;
-      };
-    }
-  | {
-      error: string;
-    };
-
 function dashboardFor(role: Role) {
   if (role === "BRAND") return "/brand/dashboard";
   if (role === "CREATOR") return "/creator/dashboard";
   return "/staff/dashboard";
 }
 
-function isAllowedNext(next: string | null, role: Role) {
-  if (!next) return false;
-  if (!next.startsWith("/")) return false;
-
-  if (role === "BRAND") return next.startsWith("/brand");
-  if (role === "CREATOR") return next.startsWith("/creator");
-  if (role === "STAFF") return next.startsWith("/staff");
-
-  return false;
-}
-
-async function readSafeJson(res: Response) {
-  const text = await res.text();
-  try {
-    return { json: JSON.parse(text), text };
-  } catch {
-    return { json: null, text };
-  }
-}
-
 function LoginPageContent() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -79,42 +45,34 @@ function LoginPageContent() {
 
       if (error) throw error;
 
-      const session = data.session;
-      if (!session?.access_token) {
-        throw new Error("Keine Sitzung zurückgegeben.");
+      const user = data.user;
+      const metadata = user.user_metadata ?? {};
+      const role = String(metadata.role ?? "").toUpperCase() as Role;
+
+      if (!user?.id || !user.email || !role) {
+        throw new Error("Ungültiger Benutzer.");
       }
 
-      const meRes = await fetch("/api/me", {
+      // 🔥 Sync IMMER beim Login ausführen
+      await fetch("/api/auth/sync", {
+        method: "POST",
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
         },
-        cache: "no-store",
+        body: JSON.stringify({
+          id: user.id,
+          email: user.email,
+          role,
+          companyName: metadata.companyName ?? null,
+          contactPerson: metadata.contactPerson ?? null,
+          phone: metadata.phone ?? null,
+          displayName: metadata.fullName ?? null,
+          acceptedTerms: metadata.acceptedTerms === true,
+          acceptedPrivacy: metadata.acceptedPrivacy === true,
+        }),
       });
 
-      const { json, text } = await readSafeJson(meRes);
-      const meJson = json as MeResponse | null;
-
-      if (!meRes.ok) {
-        const backendError =
-          meJson && "error" in meJson
-            ? meJson.error
-            : text || `Anfrage fehlgeschlagen mit Status ${meRes.status}`;
-        throw new Error(backendError);
-      }
-
-      if (!meJson || !("ok" in meJson) || !meJson.ok) {
-        throw new Error("Ungültige Antwort von /api/me");
-      }
-
-      const finalRole = meJson.user.role;
-      const defaultTarget = dashboardFor(finalRole);
-
-      let target = defaultTarget;
-      if (next && isAllowedNext(next, finalRole)) {
-        target = next;
-      }
-
-      window.location.href = target;
+      window.location.href = dashboardFor(role);
     } catch (err: any) {
       setError(err?.message ?? "Anmeldung fehlgeschlagen");
     } finally {
@@ -123,18 +81,14 @@ function LoginPageContent() {
   }
 
   const inputClassName =
-    "w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-black focus:ring-2 focus:ring-black/10";
+    "w-full rounded-xl border border-gray-300 px-4 py-3 text-base focus:border-black focus:ring-2 focus:ring-black/10";
 
   return (
-    <div className="flex min-h-[calc(100vh-120px)] items-center justify-center bg-neutral-100 px-4 py-8 sm:py-10">
-      <div className="w-full max-w-md rounded-2xl border border-black/5 bg-white p-5 shadow-sm sm:p-8">
-        <h1 className="mb-2 text-center text-2xl font-semibold text-gray-900 sm:text-3xl">
+    <div className="flex min-h-screen items-center justify-center bg-neutral-100 px-4">
+      <div className="w-full max-w-md rounded-2xl border bg-white p-6 shadow-sm">
+        <h1 className="text-center text-2xl font-semibold mb-4">
           Anmelden
         </h1>
-
-        <p className="mb-6 text-center text-sm leading-6 text-gray-600">
-          Greife auf dein Dashboard zu und setze deine Arbeit fort.
-        </p>
 
         <div className="space-y-4">
           <input
@@ -143,8 +97,6 @@ function LoginPageContent() {
             className={inputClassName}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-            inputMode="email"
           />
 
           <input
@@ -153,34 +105,26 @@ function LoginPageContent() {
             className={inputClassName}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
           />
         </div>
 
-        <div className="mt-5 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
-          <Link href="/forgot-password" className="text-gray-700 underline underline-offset-2">
-            Passwort vergessen?
-          </Link>
+        {error && (
+          <div className="mt-4 text-sm text-red-600">{error}</div>
+        )}
 
-          <Link href="/register" className="text-gray-700 underline underline-offset-2">
+        <button
+          onClick={handleLogin}
+          disabled={loading}
+          className="mt-6 w-full rounded-xl bg-black py-3 text-white"
+        >
+          {loading ? "Lädt..." : "Anmelden"}
+        </button>
+
+        <div className="mt-4 text-sm text-center">
+          <Link href="/register" className="underline">
             Konto erstellen
           </Link>
         </div>
-
-        {error ? (
-          <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
-            {error}
-          </div>
-        ) : null}
-
-        <button
-          type="button"
-          onClick={handleLogin}
-          disabled={loading}
-          className="mt-6 w-full rounded-xl bg-black px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
-        >
-          {loading ? "Anmeldung läuft..." : "Anmelden"}
-        </button>
       </div>
     </div>
   );
@@ -188,18 +132,7 @@ function LoginPageContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[calc(100vh-120px)] items-center justify-center bg-neutral-100 px-4 py-8 sm:py-10">
-          <div className="w-full max-w-md rounded-2xl border border-black/5 bg-white p-5 shadow-sm sm:p-8">
-            <h1 className="mb-2 text-center text-2xl font-semibold text-gray-900 sm:text-3xl">
-              Anmelden
-            </h1>
-            <p className="text-center text-sm text-gray-600">Lädt...</p>
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<div>Loading...</div>}>
       <LoginPageContent />
     </Suspense>
   );
