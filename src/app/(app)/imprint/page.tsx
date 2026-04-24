@@ -25,8 +25,8 @@ export default function ImpressumPage() {
       </p>
 
       <p className="mt-4">
-        Umsatzsteuer-ID:<br />
-        [OPTIONAL – UST-ID]
+        Steuer-ID:<br />
+        [US Tax ID (EIN): 61-2292672]
       </p>
 
       <p className="mt-4">
