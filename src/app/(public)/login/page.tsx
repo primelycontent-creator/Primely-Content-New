@@ -7,14 +7,36 @@ import { createClient } from "@supabase/supabase-js";
 
 type Role = "BRAND" | "CREATOR" | "STAFF";
 
+type MeResponse =
+  | {
+      ok: true;
+      user: {
+        id: string;
+        email: string;
+        role: Role;
+      };
+    }
+  | {
+      error: string;
+    };
+
 function dashboardFor(role: Role) {
   if (role === "BRAND") return "/brand/dashboard";
   if (role === "CREATOR") return "/creator/dashboard";
   return "/staff/dashboard";
 }
 
+async function readSafeJson(res: Response) {
+  const text = await res.text();
+  try {
+    return { json: JSON.parse(text), text };
+  } catch {
+    return { json: null, text };
+  }
+}
+
 function LoginPageContent() {
-  const searchParams = useSearchParams();
+  useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,32 +67,36 @@ function LoginPageContent() {
 
       if (error) throw error;
 
-      const user = data.user;
-      const metadata = user.user_metadata ?? {};
-      const role = String(metadata.role ?? "").toUpperCase() as Role;
+      const session = data.session;
 
-      if (!user?.id || !user.email || !role) {
-        throw new Error("Ungültiger Benutzer.");
+      if (!session?.access_token) {
+        throw new Error("Keine Sitzung zurückgegeben.");
       }
 
-      // 🔥 Sync IMMER beim Login ausführen
-      await fetch("/api/auth/sync", {
-        method: "POST",
+      const meRes = await fetch("/api/me", {
         headers: {
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({
-          id: user.id,
-          email: user.email,
-          role,
-          companyName: metadata.companyName ?? null,
-          contactPerson: metadata.contactPerson ?? null,
-          phone: metadata.phone ?? null,
-          displayName: metadata.fullName ?? null,
-          acceptedTerms: metadata.acceptedTerms === true,
-          acceptedPrivacy: metadata.acceptedPrivacy === true,
-        }),
+        cache: "no-store",
       });
+
+      const { json, text } = await readSafeJson(meRes);
+      const meJson = json as MeResponse | null;
+
+      if (!meRes.ok) {
+        const backendError =
+          meJson && "error" in meJson
+            ? meJson.error
+            : text || `Anfrage fehlgeschlagen mit Status ${meRes.status}`;
+
+        throw new Error(backendError);
+      }
+
+      if (!meJson || !("ok" in meJson) || !meJson.ok) {
+        throw new Error("Ungültige Antwort von /api/me");
+      }
+
+      const role = meJson.user.role;
 
       window.location.href = dashboardFor(role);
     } catch (err: any) {
@@ -86,7 +112,7 @@ function LoginPageContent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-100 px-4">
       <div className="w-full max-w-md rounded-2xl border bg-white p-6 shadow-sm">
-        <h1 className="text-center text-2xl font-semibold mb-4">
+        <h1 className="mb-4 text-center text-2xl font-semibold">
           Anmelden
         </h1>
 
@@ -97,6 +123,8 @@ function LoginPageContent() {
             className={inputClassName}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            inputMode="email"
           />
 
           <input
@@ -105,22 +133,22 @@ function LoginPageContent() {
             className={inputClassName}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
           />
         </div>
 
-        {error && (
-          <div className="mt-4 text-sm text-red-600">{error}</div>
-        )}
+        {error ? <div className="mt-4 text-sm text-red-600">{error}</div> : null}
 
         <button
+          type="button"
           onClick={handleLogin}
           disabled={loading}
-          className="mt-6 w-full rounded-xl bg-black py-3 text-white"
+          className="mt-6 w-full rounded-xl bg-black py-3 text-white disabled:opacity-60"
         >
           {loading ? "Lädt..." : "Anmelden"}
         </button>
 
-        <div className="mt-4 text-sm text-center">
+        <div className="mt-4 text-center text-sm">
           <Link href="/register" className="underline">
             Konto erstellen
           </Link>
