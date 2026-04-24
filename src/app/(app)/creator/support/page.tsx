@@ -28,7 +28,14 @@ async function readSafeJson(res: Response) {
   }
 }
 
-export default function CreatorSupportPage() {
+function statusLabel(status: string) {
+  if (status === "OPEN") return "Offen";
+  if (status === "IN_PROGRESS") return "In Bearbeitung";
+  if (status === "CLOSED") return "Geschlossen";
+  return status.replace("_", " ");
+}
+
+export default function BrandSupportPage() {
   const [token, setToken] = useState<string | null>(null);
   const [tickets, setTickets] = useState<TicketRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +75,7 @@ export default function CreatorSupportPage() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   async function createTicket() {
@@ -97,22 +105,25 @@ export default function CreatorSupportPage() {
       setBriefId("");
       await load();
     } catch (e: any) {
-      setError(e?.message ?? "Create error");
+      setError(e?.message ?? "Ticket konnte nicht erstellt werden.");
     } finally {
       setBusy(false);
     }
   }
 
+  const inputClassName =
+    "w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:ring-2 focus:ring-emerald-950/20";
+
   return (
-    <div className="p-8">
-      <div className="mx-auto max-w-5xl rounded-3xl border bg-white/80 p-10 shadow-sm">
-        <div className="flex items-start justify-between gap-6">
+    <div className="px-4 py-6 sm:p-8">
+      <div className="mx-auto max-w-5xl rounded-3xl border bg-white/80 p-5 shadow-sm sm:p-8 lg:p-10">
+        <div className="flex flex-col items-start justify-between gap-6 sm:flex-row">
           <div>
-            <h1 className="font-serif text-5xl leading-[0.95] tracking-tight text-gray-900">
+            <h1 className="font-serif text-4xl leading-[0.95] tracking-tight text-gray-900 sm:text-5xl">
               Support
             </h1>
-            <p className="mt-3 text-sm text-gray-600">
-              Create a support ticket and track replies from staff.
+            <p className="mt-3 text-sm leading-6 text-gray-600">
+              Erstelle ein Support-Ticket und verfolge Antworten unseres Teams.
             </p>
           </div>
 
@@ -120,59 +131,59 @@ export default function CreatorSupportPage() {
             href="/creator/dashboard"
             className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
           >
-            Back
+            Zurück
           </Link>
         </div>
 
         {error ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
             {error}
           </div>
         ) : null}
 
-        <div className="mt-8 rounded-3xl border bg-white p-6">
-          <div className="text-sm font-semibold text-gray-900">New Ticket</div>
+        <div className="mt-8 rounded-3xl border bg-white p-5 sm:p-6">
+          <div className="text-sm font-semibold text-gray-900">Neues Ticket</div>
 
           <div className="mt-4 grid gap-4">
             <input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="Subject"
-              className="w-full rounded-2xl border px-4 py-3 text-sm outline-none"
+              placeholder="Betreff"
+              className={inputClassName}
             />
 
             <input
               value={briefId}
               onChange={(e) => setBriefId(e.target.value)}
-              placeholder="Optional brief id"
-              className="w-full rounded-2xl border px-4 py-3 text-sm outline-none"
+              placeholder="Optionale Briefing-ID"
+              className={inputClassName}
             />
 
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Describe your issue…"
-              className="min-h-[160px] w-full rounded-2xl border px-4 py-3 text-sm outline-none"
+              placeholder="Beschreibe dein Anliegen..."
+              className="min-h-[160px] w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:ring-2 focus:ring-emerald-950/20"
             />
 
             <button
               type="button"
               disabled={busy || !subject.trim() || !message.trim()}
               onClick={createTicket}
-              className="rounded-full bg-emerald-950 px-6 py-3 text-sm font-semibold text-white hover:opacity-95 disabled:opacity-50"
+              className="w-full rounded-full bg-emerald-950 px-6 py-3 text-sm font-semibold text-white hover:opacity-95 disabled:opacity-50 sm:w-auto"
             >
-              {busy ? "Creating…" : "Create ticket"}
+              {busy ? "Wird erstellt..." : "Ticket erstellen"}
             </button>
           </div>
         </div>
 
-        <div className="mt-6 rounded-3xl border bg-white p-6">
-          <div className="text-sm font-semibold text-gray-900">Your Tickets</div>
+        <div className="mt-6 rounded-3xl border bg-white p-5 sm:p-6">
+          <div className="text-sm font-semibold text-gray-900">Deine Tickets</div>
 
           {loading ? (
-            <p className="mt-3 text-sm text-gray-600">Loading…</p>
+            <p className="mt-3 text-sm text-gray-600">Wird geladen...</p>
           ) : tickets.length === 0 ? (
-            <p className="mt-3 text-sm text-gray-600">No tickets yet.</p>
+            <p className="mt-3 text-sm text-gray-600">Noch keine Tickets vorhanden.</p>
           ) : (
             <div className="mt-4 space-y-3">
               {tickets.map((t) => (
@@ -181,17 +192,19 @@ export default function CreatorSupportPage() {
                   href={`/creator/support/${t.id}`}
                   className="block rounded-2xl border bg-white px-5 py-4 hover:bg-gray-50"
                 >
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold text-gray-900">{t.subject}</div>
+                      <div className="truncate text-sm font-semibold text-gray-900">
+                        {t.subject}
+                      </div>
                       <div className="mt-1 text-xs text-gray-500">
-                        Messages: {t._count?.messages ?? 0}
-                        {t.briefId ? ` • Brief: ${t.briefId}` : ""}
+                        Nachrichten: {t._count?.messages ?? 0}
+                        {t.briefId ? ` • Briefing: ${t.briefId}` : ""}
                       </div>
                     </div>
 
-                    <span className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-800">
-                      {t.status.replace("_", " ")}
+                    <span className="w-fit rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-800">
+                      {statusLabel(t.status)}
                     </span>
                   </div>
                 </Link>
