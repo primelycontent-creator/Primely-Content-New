@@ -53,10 +53,7 @@ async function readSafeJson(res: Response) {
 }
 
 function safeFileName(name: string) {
-  return name
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-zA-Z0-9._-]/g, "");
+  return name.trim().replace(/\s+/g, "-").replace(/[^a-zA-Z0-9._-]/g, "");
 }
 
 function formatBytes(bytes?: number | null) {
@@ -69,6 +66,14 @@ function formatBytes(bytes?: number | null) {
     unit++;
   }
   return `${size.toFixed(unit === 0 ? 0 : 2)} ${units[unit]}`;
+}
+
+function statusLabel(status: string) {
+  const s = String(status).toUpperCase();
+  if (s === "APPROVED") return "Freigegeben";
+  if (s === "CHANGES_REQUESTED") return "Änderungen angefragt";
+  if (s === "PENDING") return "Ausstehend";
+  return status.replaceAll("_", " ");
 }
 
 function statusBadge(status: string) {
@@ -141,6 +146,7 @@ export default function CreatorUploadsDetailPage() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, briefId]);
 
   function updateSlot(index: number, file: File | null) {
@@ -148,9 +154,7 @@ export default function CreatorUploadsDetailPage() {
       const next = [...prev];
       const old = next[index];
 
-      if (old?.previewUrl) {
-        URL.revokeObjectURL(old.previewUrl);
-      }
+      if (old?.previewUrl) URL.revokeObjectURL(old.previewUrl);
 
       next[index] = {
         file,
@@ -162,7 +166,7 @@ export default function CreatorUploadsDetailPage() {
   }
 
   async function presignUpload(path: string) {
-    if (!token) throw new Error("Missing token");
+    if (!token) throw new Error("Token fehlt.");
 
     const res = await fetch("/api/storage/presign", {
       method: "POST",
@@ -195,7 +199,7 @@ export default function CreatorUploadsDetailPage() {
     mimeType?: string;
     sizeBytes?: number;
   }) {
-    if (!token) throw new Error("Missing token");
+    if (!token) throw new Error("Token fehlt.");
 
     const res = await fetch(`/api/creator/briefs/${meta.briefId}/deliverables`, {
       method: "POST",
@@ -222,7 +226,7 @@ export default function CreatorUploadsDetailPage() {
 
     const selectedFiles = slots.map((s) => s.file).filter(Boolean) as File[];
     if (selectedFiles.length === 0) {
-      setError("Please select at least one file.");
+      setError("Bitte wähle mindestens eine Datei aus.");
       return;
     }
 
@@ -245,9 +249,7 @@ export default function CreatorUploadsDetailPage() {
             contentType: file.type || "application/octet-stream",
           });
 
-        if (up.error) {
-          throw new Error(up.error.message ?? "Upload failed");
-        }
+        if (up.error) throw new Error(up.error.message ?? "Upload fehlgeschlagen.");
 
         await createDeliverableRow({
           briefId: brief.id,
@@ -262,7 +264,7 @@ export default function CreatorUploadsDetailPage() {
 
       await load();
     } catch (e: any) {
-      setError(e?.message ?? "Upload failed");
+      setError(e?.message ?? "Upload fehlgeschlagen.");
     } finally {
       setBusy(false);
     }
@@ -278,9 +280,9 @@ export default function CreatorUploadsDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">
-          <div className="text-sm text-gray-600">Loading…</div>
+      <div className="px-4 py-6 sm:p-8">
+        <div className="rounded-3xl border bg-white/70 p-6 shadow-sm sm:p-10">
+          <div className="text-sm text-gray-600">Wird geladen...</div>
         </div>
       </div>
     );
@@ -288,34 +290,34 @@ export default function CreatorUploadsDetailPage() {
 
   if (!brief) {
     return (
-      <div className="p-8">
-        <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">
-          <div className="text-sm text-gray-600">{error ?? "Brief not found"}</div>
+      <div className="px-4 py-6 sm:p-8">
+        <div className="rounded-3xl border bg-white/70 p-6 shadow-sm sm:p-10">
+          <div className="text-sm text-gray-600">{error ?? "Briefing wurde nicht gefunden."}</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-8">
-      <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">
+    <div className="px-4 py-6 sm:p-8">
+      <div className="rounded-3xl border bg-white/70 p-5 shadow-sm sm:p-8 lg:p-10">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="font-serif text-5xl leading-[0.95] tracking-tight text-gray-900">
-              Upload Deliverables
+            <h1 className="font-serif text-4xl leading-[0.95] tracking-tight text-gray-900 sm:text-5xl">
+              Deliverables hochladen
             </h1>
-            <p className="mt-3 max-w-2xl text-sm text-gray-600">
-              Upload your requested deliverables slot by slot. Each slot belongs to one required video.
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
+              Lade deine angefragten Deliverables Slot für Slot hoch. Jeder Slot gehört zu einem benötigten Video.
             </p>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
               onClick={() => router.push(`/creator/briefs/${brief.id}`)}
               className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
             >
-              Back to Brief
+              Zurück zum Briefing
             </button>
 
             <button
@@ -324,18 +326,18 @@ export default function CreatorUploadsDetailPage() {
               onClick={uploadAll}
               className="rounded-full bg-emerald-950 px-6 py-3 text-sm font-semibold text-white shadow hover:opacity-95 disabled:opacity-50"
             >
-              {busy ? "Uploading…" : "Upload selected files"}
+              {busy ? "Upload läuft..." : "Ausgewählte Dateien hochladen"}
             </button>
           </div>
         </div>
 
-        {error && (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        {error ? (
+          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
             {error}
           </div>
-        )}
+        ) : null}
 
-        <div className="mt-8 rounded-3xl border bg-white p-6">
+        <div className="mt-8 rounded-3xl border bg-white p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="text-sm font-semibold text-gray-900">{brief.title}</div>
@@ -345,7 +347,7 @@ export default function CreatorUploadsDetailPage() {
             </div>
 
             <span className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-800">
-              {brief.deliverableCount} required slot{brief.deliverableCount > 1 ? "s" : ""}
+              {brief.deliverableCount} benötigte Slot{brief.deliverableCount > 1 ? "s" : ""}
             </span>
           </div>
         </div>
@@ -360,20 +362,20 @@ export default function CreatorUploadsDetailPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-sm font-semibold text-gray-900">
-                      Video Slot {slotIndex}
+                      Video-Slot {slotIndex}
                     </div>
                     <div className="mt-1 text-xs text-gray-500">
-                      One upload per slot.
+                      Ein Upload pro Slot.
                     </div>
                   </div>
 
                   {existing ? (
                     <span className={statusBadge(existing.status)}>
-                      {existing.status.replace("_", " ")}
+                      {statusLabel(existing.status)}
                     </span>
                   ) : (
                     <span className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-800">
-                      Empty
+                      Leer
                     </span>
                   )}
                 </div>
@@ -381,7 +383,7 @@ export default function CreatorUploadsDetailPage() {
                 {existing ? (
                   <div className="mt-4 rounded-xl border bg-gray-50 p-3">
                     <div className="truncate text-sm font-medium text-gray-900">
-                      Current: {existing.fileName ?? existing.path}
+                      Aktuell: {existing.fileName ?? existing.path}
                     </div>
                     <div className="mt-1 text-xs text-gray-500">
                       {existing.mimeType ?? "—"} • {formatBytes(existing.sizeBytes)}
@@ -389,21 +391,21 @@ export default function CreatorUploadsDetailPage() {
 
                     {existing.staffFeedback ? (
                       <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                        <div className="font-semibold">Staff feedback</div>
+                        <div className="font-semibold">Staff-Feedback</div>
                         <div className="mt-1 whitespace-pre-wrap">{existing.staffFeedback}</div>
                       </div>
                     ) : null}
 
                     {String(existing.brandStatus).toUpperCase() === "CHANGES_REQUESTED" && existing.brandFeedback ? (
                       <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                        <div className="font-semibold">Brand feedback</div>
+                        <div className="font-semibold">Brand-Feedback</div>
                         <div className="mt-1 whitespace-pre-wrap">{existing.brandFeedback}</div>
                       </div>
                     ) : null}
                   </div>
                 ) : (
                   <div className="mt-4 rounded-xl border border-dashed bg-gray-50 p-4 text-xs text-gray-500">
-                    No upload in this slot yet.
+                    In diesem Slot wurde noch nichts hochgeladen.
                   </div>
                 )}
 
@@ -419,21 +421,17 @@ export default function CreatorUploadsDetailPage() {
                 {slot.file ? (
                   <div className="mt-4 rounded-xl border bg-white p-3">
                     <div className="truncate text-sm font-medium text-gray-900">
-                      Selected: {slot.file.name}
+                      Ausgewählt: {slot.file.name}
                     </div>
                     <div className="mt-1 text-xs text-gray-500">
                       {(slot.file.size / 1024 / 1024).toFixed(2)} MB
                     </div>
 
                     {slot.previewUrl && slot.file.type.startsWith("video/") ? (
-                      <video
-                        src={slot.previewUrl}
-                        controls
-                        className="mt-3 w-full rounded-xl"
-                      />
+                      <video src={slot.previewUrl} controls className="mt-3 w-full rounded-xl" />
                     ) : (
                       <div className="mt-3 rounded-xl border bg-gray-50 p-3 text-xs text-gray-600">
-                        Preview is mainly available for videos. This file can still be uploaded normally.
+                        Eine Vorschau ist hauptsächlich für Videos verfügbar. Die Datei kann trotzdem normal hochgeladen werden.
                       </div>
                     )}
 
@@ -442,7 +440,7 @@ export default function CreatorUploadsDetailPage() {
                       onClick={() => updateSlot(index, null)}
                       className="mt-3 rounded-full border bg-white px-4 py-2 text-xs font-semibold hover:bg-gray-50"
                     >
-                      Remove selection
+                      Auswahl entfernen
                     </button>
                   </div>
                 ) : null}

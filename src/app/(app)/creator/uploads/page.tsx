@@ -32,6 +32,15 @@ async function readSafeJson(res: Response) {
   }
 }
 
+function statusLabel(status: string) {
+  const s = String(status).toUpperCase();
+  if (s === "IN_PROGRESS") return "In Bearbeitung";
+  if (s === "DONE") return "Abgeschlossen";
+  if (s === "REVIEW") return "In Prüfung";
+  if (s === "DECLINED") return "Abgelehnt";
+  return status.replaceAll("_", " ");
+}
+
 function statusBadge(status: string) {
   const s = String(status).toUpperCase();
   const base = "rounded-full border px-3 py-1 text-xs font-semibold";
@@ -93,47 +102,48 @@ export default function CreatorUploadsPage() {
   }, [briefs]);
 
   return (
-    <div className="p-8">
-      <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">
-        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h1 className="font-serif text-5xl leading-[0.95] tracking-tight text-gray-900">
-              Uploads
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm text-gray-600">
-              Select a campaign and continue to its dedicated upload workspace with structured video slots and previews.
-            </p>
+    <div className="px-4 py-6 sm:p-8">
+      <div className="rounded-3xl border bg-white/70 p-5 shadow-sm sm:p-8 lg:p-10">
+        <div>
+          <h1 className="font-serif text-4xl leading-[0.95] tracking-tight text-gray-900 sm:text-5xl">
+            Uploads
+          </h1>
 
-            <div className="mt-5 flex flex-wrap gap-2 text-xs">
-              <span className="rounded-full border bg-white px-3 py-1">
-                Active briefings: <b>{stats.total}</b>
-              </span>
-              <span className="rounded-full border bg-white px-3 py-1">
-                Total required uploads: <b>{stats.totalRequired}</b>
-              </span>
-            </div>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
+            Wähle eine Kampagne aus und lade deine Deliverables in den passenden Upload-Slots hoch.
+          </p>
+
+          <div className="mt-5 flex flex-wrap gap-2 text-xs">
+            <span className="rounded-full border bg-white px-3 py-1">
+              Aktive Briefings: <b>{stats.total}</b>
+            </span>
+            <span className="rounded-full border bg-white px-3 py-1">
+              Benötigte Uploads: <b>{stats.totalRequired}</b>
+            </span>
           </div>
         </div>
 
-        {error && (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        {error ? (
+          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
             {error}
           </div>
-        )}
+        ) : null}
 
-        <div className="mt-8 rounded-3xl border bg-white p-6">
-          <div className="text-sm font-semibold text-gray-900">Upload-ready briefings</div>
-          <p className="mt-1 text-xs text-gray-500">
-            Open a briefing upload workspace to place your files into the requested slots.
+        <div className="mt-8 rounded-3xl border bg-white p-5 sm:p-6">
+          <div className="text-sm font-semibold text-gray-900">Upload-bereite Briefings</div>
+          <p className="mt-1 text-xs leading-5 text-gray-500">
+            Öffne den Upload-Bereich eines Briefings, um deine Dateien den gewünschten Slots zuzuordnen.
           </p>
 
           {loading ? (
-            <p className="mt-4 text-sm text-gray-600">Loading…</p>
+            <p className="mt-4 text-sm text-gray-600">Wird geladen...</p>
           ) : briefs.length === 0 ? (
             <div className="mt-4 rounded-2xl border bg-white p-8 text-center">
-              <div className="text-base font-semibold text-gray-900">No active uploads right now</div>
-              <p className="mt-2 text-sm text-gray-600">
-                Once a campaign is assigned and active, it will appear here.
+              <div className="text-base font-semibold text-gray-900">
+                Aktuell keine offenen Uploads
+              </div>
+              <p className="mt-2 text-sm leading-6 text-gray-600">
+                Sobald dir eine aktive Kampagne zugewiesen wird, erscheint sie hier.
               </p>
             </div>
           ) : (
@@ -147,8 +157,10 @@ export default function CreatorUploadsPage() {
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <div className="truncate text-base font-semibold text-gray-900">{b.title}</div>
-                        <span className={statusBadge(b.status)}>{b.status.replace("_", " ")}</span>
+                        <div className="truncate text-base font-semibold text-gray-900">
+                          {b.title}
+                        </div>
+                        <span className={statusBadge(b.status)}>{statusLabel(b.status)}</span>
                       </div>
 
                       <div className="mt-2 text-xs text-gray-500">
@@ -160,15 +172,15 @@ export default function CreatorUploadsPage() {
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <div className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-800">
-                        {b.deliverableCount} slot{b.deliverableCount > 1 ? "s" : ""}
+                    <div className="text-left md:text-right">
+                      <div className="w-fit rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-800 md:ml-auto">
+                        {b.deliverableCount} Slot{b.deliverableCount > 1 ? "s" : ""}
                       </div>
                       <div className="mt-2 text-[11px] text-gray-500">
-                        Updated: {new Date(b.updatedAt).toLocaleString()}
+                        Aktualisiert: {new Date(b.updatedAt).toLocaleString("de-DE")}
                       </div>
-                      <div className="mt-2 text-xs font-semibold text-emerald-950 opacity-0 transition group-hover:opacity-100">
-                        Open upload workspace →
+                      <div className="mt-2 text-xs font-semibold text-emerald-950 opacity-100 transition md:opacity-0 md:group-hover:opacity-100">
+                        Upload-Bereich öffnen →
                       </div>
                     </div>
                   </div>
