@@ -11,15 +11,56 @@ const supabase = createClient(
 
 const NICHE_GROUPS = {
   "Beauty & Skincare": ["Hautpflege", "Make-up", "Anti-Aging", "Naturkosmetik"],
-  "Fitness & Gesundheit": ["Supplements", "Home Workouts", "Fitness-Programme", "Abnehmprodukte", "Biohacking"],
+  "Fitness & Gesundheit": [
+    "Supplements",
+    "Home Workouts",
+    "Fitness-Programme",
+    "Abnehmprodukte",
+    "Biohacking",
+  ],
   Fashion: ["Streetwear", "Sportbekleidung", "Schmuck", "Taschen", "Sneaker"],
-  "Tech & Gadgets": ["Smartphones & Zubehör", "Gimbals", "Kameras", "Smartwatches", "KI-Tools & Apps"],
-  "Home & Living": ["Einrichtung", "Küchengadgets", "Haushaltshelfer", "DIY-Produkte", "Dekoration"],
-  "Food & Getränke": ["Proteinprodukte", "Kaffee-Marken", "Energy Drinks", "Süßigkeiten", "Kochboxen"],
-  "Persönlichkeitsentwicklung & Coaching": ["Online-Kurse", "Trading", "Mindset", "Dating-Coaching", "Business-Coaching"],
-  "Finanzen & Versicherungen": ["Investment-Apps", "Kryptowährungen", "Versicherungen", "Kreditkarten"],
+  "Tech & Gadgets": [
+    "Smartphones & Zubehör",
+    "Gimbals",
+    "Kameras",
+    "Smartwatches",
+    "KI-Tools & Apps",
+  ],
+  "Home & Living": [
+    "Einrichtung",
+    "Küchengadgets",
+    "Haushaltshelfer",
+    "DIY-Produkte",
+    "Dekoration",
+  ],
+  "Food & Getränke": [
+    "Proteinprodukte",
+    "Kaffee-Marken",
+    "Energy Drinks",
+    "Süßigkeiten",
+    "Kochboxen",
+  ],
+  "Persönlichkeitsentwicklung & Coaching": [
+    "Online-Kurse",
+    "Trading",
+    "Mindset",
+    "Dating-Coaching",
+    "Business-Coaching",
+  ],
+  "Finanzen & Versicherungen": [
+    "Investment-Apps",
+    "Kryptowährungen",
+    "Versicherungen",
+    "Kreditkarten",
+  ],
   Haustiere: ["Hundefutter", "Katzenzubehör", "Spielzeug", "Pflegeprodukte"],
-  "Reisen & Lifestyle": ["Reisegadgets", "Hotels", "Koffer", "Camper", "Auslandsversicherungen"],
+  "Reisen & Lifestyle": [
+    "Reisegadgets",
+    "Hotels",
+    "Koffer",
+    "Camper",
+    "Auslandsversicherungen",
+  ],
 } as const;
 
 type NicheGroup = keyof typeof NICHE_GROUPS;
@@ -80,12 +121,21 @@ type CreatorProfileDto = {
   profileImageAsset?: ProfileImageAsset | null;
 };
 
-function Card(props: { title: string; subtitle?: string; children: React.ReactNode; className?: string }) {
+function Card(props: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <section className={`rounded-3xl border bg-white p-8 ${props.className ?? ""}`}>
+    <section className={`rounded-3xl border bg-white p-5 sm:p-8 ${props.className ?? ""}`}>
       <div>
-        <h2 className="text-[28px] font-serif leading-none tracking-tight text-gray-900">{props.title}</h2>
-        {props.subtitle ? <p className="mt-2 text-sm text-gray-600">{props.subtitle}</p> : null}
+        <h2 className="font-serif text-2xl leading-none tracking-tight text-gray-900 sm:text-[28px]">
+          {props.title}
+        </h2>
+        {props.subtitle ? (
+          <p className="mt-2 text-sm leading-6 text-gray-600">{props.subtitle}</p>
+        ) : null}
       </div>
       <div className="mt-6">{props.children}</div>
     </section>
@@ -101,7 +151,7 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={
-        "w-full rounded-2xl border px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-emerald-950/20 " +
+        "w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none transition focus:ring-2 focus:ring-emerald-950/20 " +
         (props.className ?? "")
       }
     />
@@ -113,7 +163,7 @@ function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
     <textarea
       {...props}
       className={
-        "w-full rounded-2xl border px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-emerald-950/20 " +
+        "w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none transition focus:ring-2 focus:ring-emerald-950/20 " +
         (props.className ?? "")
       }
     />
@@ -149,7 +199,8 @@ export default function CreatorProfilePage() {
   const [price30sEur, setPrice30sEur] = useState<string>("");
 
   const [introAsset, setIntroAsset] = useState<IntroAsset | null>(null);
-  const [profileImageAsset, setProfileImageAsset] = useState<ProfileImageAsset | null>(null);
+  const [profileImageAsset, setProfileImageAsset] =
+    useState<ProfileImageAsset | null>(null);
 
   const [uploadingIntro, setUploadingIntro] = useState(false);
   const [uploadingProfileImage, setUploadingProfileImage] = useState(false);
@@ -162,7 +213,7 @@ export default function CreatorProfilePage() {
     return NICHE_GROUPS[nicheGroup];
   }, [nicheGroup]);
 
-  const nichesHint = useMemo(() => `${niches.length}/5 selected`, [niches.length]);
+  const nichesHint = useMemo(() => `${niches.length}/5 ausgewählt`, [niches.length]);
 
   function toggleNiche(n: string) {
     setNiches((prev) => {
@@ -232,7 +283,9 @@ export default function CreatorProfilePage() {
     setTiktok(p.tiktok ?? "");
 
     setEquipment(Array.isArray(p.equipment) ? p.equipment : []);
-    setPrice30sEur(p.price30sCents != null ? (p.price30sCents / 100).toString() : "");
+    setPrice30sEur(
+      p.price30sCents != null ? (p.price30sCents / 100).toString() : ""
+    );
     setIntroAsset(p.introVideoAsset ?? null);
     setProfileImageAsset(p.profileImageAsset ?? null);
   }
@@ -243,7 +296,7 @@ export default function CreatorProfilePage() {
         setLoading(true);
         await loadProfile();
       } catch (e: any) {
-        alert(e?.message ?? "Failed to load profile");
+        alert(e?.message ?? "Profil konnte nicht geladen werden");
       } finally {
         setLoading(false);
       }
@@ -256,7 +309,7 @@ export default function CreatorProfilePage() {
 
       const auth = await getTokenAndUserId();
       if (!auth) {
-        alert("Please login again.");
+        alert("Bitte melde dich erneut an.");
         return;
       }
 
@@ -289,9 +342,9 @@ export default function CreatorProfilePage() {
       const { json, text } = await readSafeJson(res);
       if (!res.ok) throw new Error(json?.error ?? text.slice(0, 200));
 
-      alert("Saved ✅");
+      alert("Gespeichert ✅");
     } catch (e: any) {
-      alert(e?.message ?? "Save failed");
+      alert(e?.message ?? "Speichern fehlgeschlagen");
     } finally {
       setSaving(false);
     }
@@ -316,7 +369,13 @@ export default function CreatorProfilePage() {
 
   async function attachIntroVideo(
     token: string,
-    meta: { bucket: string; path: string; fileName?: string; mimeType?: string; sizeBytes?: number }
+    meta: {
+      bucket: string;
+      path: string;
+      fileName?: string;
+      mimeType?: string;
+      sizeBytes?: number;
+    }
   ) {
     const res = await fetch("/api/creator/profile/intro-video", {
       method: "POST",
@@ -336,7 +395,13 @@ export default function CreatorProfilePage() {
 
   async function attachProfileImage(
     token: string,
-    meta: { bucket: string; path: string; fileName?: string; mimeType?: string; sizeBytes?: number }
+    meta: {
+      bucket: string;
+      path: string;
+      fileName?: string;
+      mimeType?: string;
+      sizeBytes?: number;
+    }
   ) {
     const res = await fetch("/api/creator/profile/profile-image", {
       method: "POST",
@@ -353,11 +418,10 @@ export default function CreatorProfilePage() {
     const asset = json?.asset as ProfileImageAsset | undefined;
     if (asset) setProfileImageAsset(asset);
   }
-
   async function onPickIntroVideo(file: File | null) {
     if (!file) return;
     if (!file.type.includes("video")) {
-      alert("Please upload a video file (mp4).");
+      alert("Bitte lade eine Videodatei hoch.");
       return;
     }
 
@@ -366,12 +430,14 @@ export default function CreatorProfilePage() {
 
       const auth = await getTokenAndUserId();
       if (!auth) {
-        alert("Please login again.");
+        alert("Bitte melde dich erneut an.");
         return;
       }
 
       const bucket = "ugc";
-      const path = `users/${auth.userId}/creator/intro/${crypto.randomUUID()}-${safeFileName(file.name)}`;
+      const path = `users/${auth.userId}/creator/intro/${crypto.randomUUID()}-${safeFileName(
+        file.name
+      )}`;
 
       const presign = await presignUpload(auth.token, bucket, path);
 
@@ -381,7 +447,7 @@ export default function CreatorProfilePage() {
           contentType: file.type || "video/mp4",
         });
 
-      if (up.error) throw new Error(up.error.message ?? "Upload failed");
+      if (up.error) throw new Error(up.error.message ?? "Upload fehlgeschlagen");
 
       await attachIntroVideo(auth.token, {
         bucket,
@@ -391,9 +457,9 @@ export default function CreatorProfilePage() {
         sizeBytes: file.size,
       });
 
-      alert("Intro video uploaded ✅");
+      alert("Intro-Video hochgeladen ✅");
     } catch (e: any) {
-      alert(e?.message ?? "Intro upload failed");
+      alert(e?.message ?? "Intro-Video Upload fehlgeschlagen");
     } finally {
       setUploadingIntro(false);
     }
@@ -402,7 +468,7 @@ export default function CreatorProfilePage() {
   async function onPickProfileImage(file: File | null) {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file.");
+      alert("Bitte lade eine Bilddatei hoch.");
       return;
     }
 
@@ -411,12 +477,14 @@ export default function CreatorProfilePage() {
 
       const auth = await getTokenAndUserId();
       if (!auth) {
-        alert("Please login again.");
+        alert("Bitte melde dich erneut an.");
         return;
       }
 
       const bucket = "ugc";
-      const path = `users/${auth.userId}/creator/profile-image/${crypto.randomUUID()}-${safeFileName(file.name)}`;
+      const path = `users/${auth.userId}/creator/profile-image/${crypto.randomUUID()}-${safeFileName(
+        file.name
+      )}`;
 
       const presign = await presignUpload(auth.token, bucket, path);
 
@@ -426,7 +494,7 @@ export default function CreatorProfilePage() {
           contentType: file.type || "image/jpeg",
         });
 
-      if (up.error) throw new Error(up.error.message ?? "Upload failed");
+      if (up.error) throw new Error(up.error.message ?? "Upload fehlgeschlagen");
 
       await attachProfileImage(auth.token, {
         bucket,
@@ -436,9 +504,9 @@ export default function CreatorProfilePage() {
         sizeBytes: file.size,
       });
 
-      alert("Profile image uploaded ✅");
+      alert("Profilbild hochgeladen ✅");
     } catch (e: any) {
-      alert(e?.message ?? "Profile image upload failed");
+      alert(e?.message ?? "Profilbild Upload fehlgeschlagen");
     } finally {
       setUploadingProfileImage(false);
     }
@@ -446,78 +514,81 @@ export default function CreatorProfilePage() {
 
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">Loading…</div>
+      <div className="px-4 py-6 sm:p-8">
+        <div className="rounded-3xl border bg-white/70 p-6 text-sm text-gray-600 shadow-sm sm:p-10">
+          Profil wird geladen...
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-8">
-      <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">
+    <div className="px-4 py-6 sm:p-8">
+      <div className="rounded-3xl border bg-white/70 p-5 shadow-sm sm:p-8 lg:p-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="max-w-[820px]">
-            <h1 className="font-serif text-5xl leading-[0.95] tracking-tight text-gray-900">
-              Creator Profile
+            <h1 className="font-serif text-4xl leading-[0.95] tracking-tight text-gray-900 sm:text-5xl">
+              Creator-Profil
             </h1>
-            <p className="mt-3 text-sm text-gray-600">
-              Keep your profile up to date so brands can match you faster.
+            <p className="mt-3 text-sm leading-6 text-gray-600">
+              Halte dein Profil aktuell, damit passende Brands und Kampagnen schneller zu dir gefunden werden.
             </p>
           </div>
 
           <button
             onClick={onSave}
             disabled={saving}
-            className="rounded-full bg-emerald-950 px-6 py-3 text-sm font-semibold text-white shadow hover:opacity-95 disabled:opacity-50"
+            className="w-full rounded-full bg-emerald-950 px-6 py-3 text-sm font-semibold text-white shadow hover:opacity-95 disabled:opacity-50 sm:w-auto"
           >
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? "Wird gespeichert..." : "Änderungen speichern"}
           </button>
         </div>
 
         <div className="mt-10 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-6">
-            <Card title="Basics">
+            <Card title="Grunddaten">
               <div className="grid gap-4">
                 <div>
-                  <Label>Full name</Label>
+                  <Label>Vollständiger Name</Label>
                   <Input
                     className="mt-2"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Name Vorname"
+                    placeholder="Vorname Nachname"
                   />
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <Label>Phone</Label>
+                    <Label>Telefon</Label>
                     <Input
                       className="mt-2"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+49…"
+                      placeholder="+49..."
+                      inputMode="tel"
                     />
                   </div>
 
                   <div>
-                    <Label>Work mode</Label>
+                    <Label>Arbeitsmodell</Label>
                     <select
-                      className="mt-2 w-full rounded-2xl border px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-emerald-950/20"
+                      className="mt-2 w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:ring-2 focus:ring-emerald-950/20"
                       value={workMode}
                       onChange={(e) => setWorkMode(e.target.value as any)}
                     >
-                      <option value="">Select…</option>
-                      <option value="FULL_TIME">Full time</option>
-                      <option value="PART_TIME">Part time</option>
+                      <option value="">Auswählen...</option>
+                      <option value="FULL_TIME">Vollzeit</option>
+                      <option value="PART_TIME">Teilzeit</option>
                     </select>
                   </div>
                 </div>
               </div>
             </Card>
 
-            <Card title="Niches">
+            <Card title="Nischen">
               <div className="flex items-baseline justify-between">
-                <div className="text-sm font-medium text-gray-700">Niche group</div>
+                <div className="text-sm font-medium text-gray-700">Nischengruppe</div>
                 <span className="text-xs text-gray-500">{nichesHint}</span>
               </div>
 
@@ -544,8 +615,10 @@ export default function CreatorProfilePage() {
                 })}
               </div>
 
-              <div className="mt-5 rounded-2xl border bg-white p-5">
-                <div className="mb-3 text-xs font-semibold text-gray-600">Sub niches (choose up to 5)</div>
+              <div className="mt-5 rounded-2xl border bg-white p-4 sm:p-5">
+                <div className="mb-3 text-xs font-semibold text-gray-600">
+                  Unter-Nischen auswählen (max. 5)
+                </div>
 
                 <div className="flex flex-wrap gap-2">
                   {activeSubs.map((n) => {
@@ -573,7 +646,7 @@ export default function CreatorProfilePage() {
 
                 {niches.length > 0 ? (
                   <div className="mt-4">
-                    <div className="text-xs font-semibold text-gray-600">Selected</div>
+                    <div className="text-xs font-semibold text-gray-600">Ausgewählt</div>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {niches.map((n) => (
                         <button
@@ -581,7 +654,7 @@ export default function CreatorProfilePage() {
                           type="button"
                           onClick={() => toggleNiche(n)}
                           className="rounded-full bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white"
-                          title="Click to remove"
+                          title="Klicken zum Entfernen"
                         >
                           {n} ×
                         </button>
@@ -595,8 +668,8 @@ export default function CreatorProfilePage() {
 
           <div className="space-y-6">
             <Card
-              title="Profile Image"
-              subtitle="Upload a clear profile photo so staff can recognize you faster."
+              title="Profilbild"
+              subtitle="Lade ein klares Profilbild hoch, damit unser Team dich schneller einordnen kann."
             >
               <input
                 ref={profileImageInputRef}
@@ -606,12 +679,12 @@ export default function CreatorProfilePage() {
                 onChange={(e) => onPickProfileImage(e.target.files?.[0] ?? null)}
               />
 
-              <div className="flex items-start gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                 <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border bg-gray-100">
                   {profileImageAsset ? (
                     <Image
                       src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${profileImageAsset.bucket}/${profileImageAsset.path}`}
-                      alt="Profile image"
+                      alt="Profilbild"
                       fill
                       className="object-cover"
                       unoptimized
@@ -631,19 +704,21 @@ export default function CreatorProfilePage() {
                     className="w-full rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
                   >
                     {uploadingProfileImage
-                      ? "Uploading…"
+                      ? "Wird hochgeladen..."
                       : profileImageAsset
-                      ? "Replace profile image"
-                      : "Upload profile image"}
+                      ? "Profilbild ersetzen"
+                      : "Profilbild hochladen"}
                   </button>
 
-                  <p className="mt-3 text-xs text-gray-500">
-                    Best result: clear face, bright light, simple background.
+                  <p className="mt-3 text-xs leading-5 text-gray-500">
+                    Bestes Ergebnis: klares Gesicht, gutes Licht, ruhiger Hintergrund.
                   </p>
 
                   {profileImageAsset ? (
                     <div className="mt-4 rounded-2xl border bg-white/70 p-4">
-                      <div className="text-xs font-semibold text-gray-700">Current profile image</div>
+                      <div className="text-xs font-semibold text-gray-700">
+                        Aktuelles Profilbild
+                      </div>
                       <div className="mt-2 break-all text-sm text-gray-900">
                         {profileImageAsset.fileName ?? profileImageAsset.path}
                       </div>
@@ -659,8 +734,8 @@ export default function CreatorProfilePage() {
             </Card>
 
             <Card
-              title="Intro Video"
-              subtitle="Upload one short introduction video (mp4). Brands & staff will use it for quick evaluation."
+              title="Intro-Video"
+              subtitle="Lade ein kurzes Vorstellungsvideo hoch. Unser Team nutzt es zur schnellen Einschätzung deines Profils."
             >
               <input
                 ref={introInputRef}
@@ -676,16 +751,22 @@ export default function CreatorProfilePage() {
                 disabled={uploadingIntro}
                 className="w-full rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
               >
-                {uploadingIntro ? "Uploading…" : introAsset ? "Replace intro video" : "Upload intro video"}
+                {uploadingIntro
+                  ? "Wird hochgeladen..."
+                  : introAsset
+                  ? "Intro-Video ersetzen"
+                  : "Intro-Video hochladen"}
               </button>
 
-              <p className="mt-3 text-xs text-gray-500">
-                Tip: Keep it ~15–45 seconds. Default playback is muted in the UI.
+              <p className="mt-3 text-xs leading-5 text-gray-500">
+                Tipp: Halte es kurz und klar, idealerweise ca. 15–45 Sekunden.
               </p>
 
               {introAsset ? (
                 <div className="mt-6 rounded-2xl border bg-white/70 p-4">
-                  <div className="text-xs font-semibold text-gray-700">Current intro video</div>
+                  <div className="text-xs font-semibold text-gray-700">
+                    Aktuelles Intro-Video
+                  </div>
                   <div className="mt-2 break-all text-sm text-gray-900">
                     {introAsset.fileName ?? introAsset.path}
                   </div>
@@ -698,13 +779,13 @@ export default function CreatorProfilePage() {
               ) : null}
             </Card>
 
-            <Card title="Quality checklist">
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>• Clear niche selection</li>
-                <li>• Portfolio link if available</li>
-                <li>• Realistic pricing for 30s</li>
-                <li>• Intro video uploaded</li>
-                <li>• Profile image uploaded</li>
+            <Card title="Qualitäts-Checkliste">
+              <ul className="space-y-2 text-sm leading-6 text-gray-600">
+                <li>• Klare Nischenauswahl</li>
+                <li>• Portfolio-Link, falls vorhanden</li>
+                <li>• Realistischer Preis für 30s Video</li>
+                <li>• Intro-Video hochgeladen</li>
+                <li>• Profilbild hochgeladen</li>
               </ul>
             </Card>
           </div>
@@ -712,26 +793,26 @@ export default function CreatorProfilePage() {
 
         <div className="mt-6 grid gap-6 xl:grid-cols-2">
           <Card
-            title="Address"
-            subtitle="Your location helps with brand matching and campaign fit."
+            title="Adresse"
+            subtitle="Dein Standort hilft beim Matching mit passenden Brands und Kampagnen."
             className="h-full"
           >
             <div className="grid gap-4">
               <div>
-                <Label>Address line 1</Label>
+                <Label>Adresse Zeile 1</Label>
                 <Input
                   className="mt-2"
-                  placeholder="Address line 1"
+                  placeholder="Adresse Zeile 1"
                   value={addressLine1}
                   onChange={(e) => setAddressLine1(e.target.value)}
                 />
               </div>
 
               <div>
-                <Label>Address line 2</Label>
+                <Label>Adresse Zeile 2</Label>
                 <Input
                   className="mt-2"
-                  placeholder="Address line 2 (optional)"
+                  placeholder="Adresse Zeile 2 (optional)"
                   value={addressLine2}
                   onChange={(e) => setAddressLine2(e.target.value)}
                 />
@@ -739,28 +820,28 @@ export default function CreatorProfilePage() {
 
               <div className="grid gap-4 md:grid-cols-3">
                 <div>
-                  <Label>City</Label>
+                  <Label>Stadt</Label>
                   <Input
                     className="mt-2"
-                    placeholder="City"
+                    placeholder="Stadt"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                   />
                 </div>
                 <div>
-                  <Label>Postal code</Label>
+                  <Label>Postleitzahl</Label>
                   <Input
                     className="mt-2"
-                    placeholder="Postal code"
+                    placeholder="Postleitzahl"
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
                   />
                 </div>
                 <div>
-                  <Label>Country</Label>
+                  <Label>Land</Label>
                   <Input
                     className="mt-2"
-                    placeholder="Country"
+                    placeholder="Land"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
                   />
@@ -770,8 +851,8 @@ export default function CreatorProfilePage() {
           </Card>
 
           <Card
-            title="Portfolio & Social"
-            subtitle="Show brands where they can see your style and experience."
+            title="Portfolio & Social Media"
+            subtitle="Zeige Brands, wo sie deinen Stil und deine Erfahrung sehen können."
             className="h-full"
           >
             <div className="grid gap-4">
@@ -811,7 +892,7 @@ export default function CreatorProfilePage() {
                 <Label>Bio</Label>
                 <Textarea
                   className="mt-2 min-h-[180px]"
-                  placeholder="Short description about you, your style, experience…"
+                  placeholder="Kurze Beschreibung über dich, deinen Stil und deine Erfahrung..."
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                 />
@@ -820,21 +901,23 @@ export default function CreatorProfilePage() {
           </Card>
 
           <Card
-            title="Pricing & Equipment"
-            subtitle="Give brands a realistic first impression of your setup and pricing."
+            title="Preise & Equipment"
+            subtitle="Gib Brands einen realistischen ersten Eindruck von deinem Setup und deinen Preisen."
             className="xl:col-span-2"
           >
             <div className="grid gap-8 xl:grid-cols-[0.75fr_1.25fr]">
               <div>
-                <Label>Price for 1x 30s video (EUR)</Label>
+                <Label>Preis für 1x 30s Video (EUR)</Label>
                 <Input
                   className="mt-2"
-                  placeholder="e.g. 150"
+                  placeholder="z. B. 150"
                   value={price30sEur}
                   onChange={(e) => setPrice30sEur(e.target.value)}
                   inputMode="decimal"
                 />
-                <p className="mt-2 text-xs text-gray-500">We store prices internally in cents.</p>
+                <p className="mt-2 text-xs text-gray-500">
+                  Preise werden intern in Cent gespeichert.
+                </p>
               </div>
 
               <div>
@@ -845,7 +928,7 @@ export default function CreatorProfilePage() {
 
                 <div className="mt-2 flex flex-col gap-2 sm:flex-row">
                   <Input
-                    placeholder='e.g. "iPhone 15 Pro", "Sony ZV-E10", "Softbox"'
+                    placeholder='z. B. "iPhone 15 Pro", "Sony ZV-E10", "Softbox"'
                     value={equipmentInput}
                     onChange={(e) => setEquipmentInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -860,7 +943,7 @@ export default function CreatorProfilePage() {
                     onClick={addEquipmentChip}
                     className="shrink-0 rounded-2xl border bg-white px-5 py-3 text-sm font-semibold hover:bg-gray-50"
                   >
-                    Add
+                    Hinzufügen
                   </button>
                 </div>
 
@@ -872,7 +955,7 @@ export default function CreatorProfilePage() {
                         type="button"
                         onClick={() => removeEquipmentChip(x)}
                         className="rounded-full bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white"
-                        title="Click to remove"
+                        title="Klicken zum Entfernen"
                       >
                         {x} ×
                       </button>
@@ -880,7 +963,7 @@ export default function CreatorProfilePage() {
                   </div>
                 ) : (
                   <div className="mt-4 rounded-2xl border border-dashed p-4 text-sm text-gray-500">
-                    No equipment added yet.
+                    Noch kein Equipment hinzugefügt.
                   </div>
                 )}
               </div>
@@ -892,9 +975,9 @@ export default function CreatorProfilePage() {
           <button
             onClick={onSave}
             disabled={saving}
-            className="rounded-full bg-emerald-950 px-8 py-3 text-sm font-semibold text-white shadow hover:opacity-95 disabled:opacity-50"
+            className="w-full rounded-full bg-emerald-950 px-8 py-3 text-sm font-semibold text-white shadow hover:opacity-95 disabled:opacity-50 sm:w-auto"
           >
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? "Wird gespeichert..." : "Änderungen speichern"}
           </button>
         </div>
       </div>
