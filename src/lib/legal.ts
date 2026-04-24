@@ -16,14 +16,14 @@ export type LegalDocument = {
 
 export const LEGAL_VERSIONS = {
   BRAND: {
-    termsVersion: "brand-terms-v1",
-    privacyVersion: "brand-privacy-v1",
-    agbVersion: "brand-agb-v1",
+    termsVersion: "brand-terms-v2",
+    privacyVersion: "brand-privacy-v2",
+    agbVersion: "brand-agb-v2",
   },
   CREATOR: {
-    termsVersion: "creator-terms-v1",
-    privacyVersion: "creator-privacy-v1",
-    agbVersion: "creator-agb-v1",
+    termsVersion: "creator-terms-v2",
+    privacyVersion: "creator-privacy-v2",
+    agbVersion: "creator-agb-v2",
   },
 } as const;
 
@@ -37,159 +37,266 @@ export const LEGAL_DOCS: Record<
 > = {
   BRAND: {
     terms: {
-      title: "Terms of Service for Brands",
+      title: "Nutzungsbedingungen für Brands",
       subtitle:
-        "These terms apply to all brands and business clients using the Primely Content platform.",
+        "Diese Nutzungsbedingungen gelten für Unternehmen und Brands, die Primely Content nutzen.",
       version: LEGAL_VERSIONS.BRAND.termsVersion,
-      lastUpdated: "2026-04-20",
+      lastUpdated: "2026-04-24",
       sections: [
         {
-          heading: "1. Scope",
+          heading: "1. Geltungsbereich",
           body: [
-            "These Terms of Service govern the contractual relationship between Primely Content and brands using the platform.",
-            "By registering and using the platform, the brand agrees to these terms in their current version.",
+            "Diese Nutzungsbedingungen regeln die Nutzung der Primely Content Plattform durch Brands und Unternehmenskunden.",
+            "Mit der Registrierung und Nutzung der Plattform akzeptiert die Brand diese Bedingungen in der jeweils aktuellen Fassung.",
           ],
         },
         {
-          heading: "2. Platform Services",
+          heading: "2. Plattformleistungen",
           body: [
-            "Primely Content provides a structured platform for briefing management, creator matching, file exchange, review workflows and campaign communication.",
-            "Primely Content may review, structure and support workflows, but individual campaign outcomes depend on the information and approvals provided by the brand.",
+            "Primely Content stellt eine digitale Plattform zur Erstellung von Briefings, Organisation von Kampagnen, Creator-Matching, Dateiübermittlung, Kommunikation und Prüfung von Deliverables bereit.",
+            "Primely Content unterstützt bei Strukturierung, Prüfung und Koordination der Zusammenarbeit. Ein bestimmter Kampagnenerfolg, Umsatz oder Performance-Ergebnis wird nicht garantiert.",
           ],
         },
         {
-          heading: "3. Brand Responsibilities",
+          heading: "3. Registrierung und Account",
           body: [
-            "Brands must provide truthful, complete and legally compliant campaign information.",
-            "Brands are responsible for briefing accuracy, product legality, claim substantiation and all required approvals on their side.",
+            "Die Brand ist verpflichtet, bei der Registrierung vollständige und wahrheitsgemäße Angaben zu machen.",
+            "Zugangsdaten sind vertraulich zu behandeln. Die Brand ist für alle Aktivitäten verantwortlich, die über ihren Account erfolgen.",
           ],
         },
         {
-          heading: "4. Creator Assignment and Workflow",
+          heading: "4. Briefings und Inhalte",
           body: [
-            "Creators are only assigned after internal review and platform verification steps where applicable.",
-            "Primely Content reserves the right to reject, delay or reassign creator matches if quality, compliance or operational reasons require this.",
+            "Die Brand ist verantwortlich für die Richtigkeit, Vollständigkeit und Rechtmäßigkeit aller Briefing-Angaben, Produktinformationen, Werbeaussagen, Claims, Materialien und Kampagnenvorgaben.",
+            "Die Brand stellt sicher, dass hochgeladene Inhalte keine Rechte Dritter verletzen und rechtlich zulässig verwendet werden dürfen.",
           ],
         },
         {
-          heading: "5. Review, Approval and Finalization",
+          heading: "5. Creator-Zuweisung und Ablauf",
           body: [
-            "Staff review and brand review are separate workflow stages.",
-            "Once a deliverable is finally approved by the brand, the respective file may become locked and no further creator changes are guaranteed.",
+            "Creator werden nach interner Prüfung und nach Verfügbarkeit passend zum Briefing ausgewählt oder vorgeschlagen.",
+            "Ein Anspruch auf eine bestimmte Creator-Zuweisung besteht nicht. Primely Content kann Creator-Zuweisungen aus Qualitäts-, Compliance- oder Kapazitätsgründen ablehnen, ändern oder verschieben.",
           ],
         },
         {
-          heading: "6. Fees and Payment",
+          heading: "6. Review, Änderungen und finale Freigabe",
           body: [
-            "Any commercial terms, fees, service packages or billing arrangements are defined separately unless explicitly stated on the platform.",
-            "Payment obligations remain due even if delays are caused by missing brand feedback, missing approvals or incomplete briefings.",
+            "Deliverables können durch interne Prüfung, Brand-Review und gegebenenfalls Änderungsrunden laufen.",
+            "Mit finaler Freigabe durch die Brand kann ein Deliverable als abgeschlossen und gesperrt gelten. Weitere Änderungen sind danach nicht garantiert.",
           ],
         },
         {
-          heading: "7. Acceptable Use",
+          heading: "7. Terminbuchung und Briefinggespräch",
           body: [
-            "The platform may not be used for unlawful, misleading, infringing, offensive or non-compliant campaigns.",
-            "Primely Content may suspend access if misuse, abuse or legal risk is detected.",
+            "Im Rahmen der Briefing-Erstellung kann eine Terminbuchung für ein Briefinggespräch erforderlich sein.",
+            "Die Brand verpflichtet sich, gebuchte Termine wahrzunehmen oder rechtzeitig zu verschieben. Verzögerungen durch nicht wahrgenommene Termine können den Projektablauf beeinflussen.",
           ],
         },
         {
-          heading: "8. Changes to the Terms",
+          heading: "8. Vergütung und Zahlungsbedingungen",
           body: [
-            "Primely Content may update these terms for legal, operational or product-related reasons.",
-            "Material updates may require renewed acceptance before continued platform use.",
+            "Preise, Pakete, Zahlungsbedingungen und Leistungsumfänge ergeben sich aus separaten Angeboten, Vereinbarungen oder Angaben auf der Plattform.",
+            "Zahlungspflichten bleiben bestehen, wenn Verzögerungen durch fehlende Informationen, verspätetes Feedback oder nicht wahrgenommene Mitwirkungspflichten der Brand entstehen.",
+          ],
+        },
+        {
+          heading: "9. Nutzungsrechte und Lizenzen",
+          body: [
+            "Art und Umfang der Nutzungsrechte an final freigegebenen Inhalten richten sich nach dem jeweiligen Briefing, der vereinbarten Lizenzdauer und den gesonderten Vereinbarungen.",
+            "Ohne ausdrückliche Vereinbarung dürfen Inhalte nicht über den vereinbarten Umfang hinaus genutzt, bearbeitet, weiterverkauft oder an Dritte übertragen werden.",
+          ],
+        },
+        {
+          heading: "10. Verbotene Nutzung",
+          body: [
+            "Die Plattform darf nicht für rechtswidrige, irreführende, diskriminierende, beleidigende, jugendgefährdende oder sonst unzulässige Inhalte genutzt werden.",
+            "Primely Content kann Inhalte, Briefings oder Accounts einschränken oder sperren, wenn ein rechtliches, reputatives oder operatives Risiko besteht.",
+          ],
+        },
+        {
+          heading: "11. Haftung",
+          body: [
+            "Primely Content haftet nach den gesetzlichen Vorschriften bei Vorsatz und grober Fahrlässigkeit.",
+            "Für leichte Fahrlässigkeit haftet Primely Content nur bei Verletzung wesentlicher Vertragspflichten und beschränkt auf den vorhersehbaren, vertragstypischen Schaden.",
+            "Primely Content haftet nicht für externe Plattformen, Algorithmusänderungen, Werbekontoentscheidungen, Performance-Ergebnisse oder Angaben der Brand.",
+          ],
+        },
+        {
+          heading: "12. Änderungen dieser Bedingungen",
+          body: [
+            "Primely Content kann diese Nutzungsbedingungen aus rechtlichen, technischen oder organisatorischen Gründen anpassen.",
+            "Wesentliche Änderungen können eine erneute Zustimmung vor weiterer Nutzung der Plattform erforderlich machen.",
           ],
         },
       ],
     },
 
     privacy: {
-      title: "Privacy Policy for Brands",
+      title: "Datenschutzerklärung für Brands",
       subtitle:
-        "This privacy policy explains how Primely Content processes brand-related account and campaign data.",
+        "Diese Datenschutzerklärung erklärt, wie Primely Content personenbezogene Daten von Brands verarbeitet.",
       version: LEGAL_VERSIONS.BRAND.privacyVersion,
-      lastUpdated: "2026-04-20",
+      lastUpdated: "2026-04-24",
       sections: [
         {
-          heading: "1. Data We Process",
+          heading: "1. Verantwortlicher",
           body: [
-            "We process account data, contact data, company data, platform activity, campaign files, support messages and technical metadata required to operate the platform.",
-            "This may include company name, contact person, billing or business contact details, briefing data, uploaded files and workflow events.",
+            "Verantwortlich für die Datenverarbeitung ist [FIRMENNAME], [ADRESSE], E-Mail: [E-MAIL].",
+            "Bitte ersetze diese Platzhalter vor Veröffentlichung durch deine tatsächlichen Unternehmensdaten.",
           ],
         },
         {
-          heading: "2. Purpose of Processing",
+          heading: "2. Verarbeitete Daten",
           body: [
-            "We process data to provide access control, campaign workflows, creator coordination, file storage, support communication and security monitoring.",
-            "Data may also be used to improve service quality and maintain auditability of workflow actions.",
+            "Wir verarbeiten Accountdaten, Kontaktdaten, Unternehmensdaten, Briefingdaten, Kampagnendaten, hochgeladene Dateien, Supportnachrichten, Kommunikationsdaten sowie technische Metadaten.",
+            "Dazu können insbesondere Name, E-Mail-Adresse, Telefonnummer, Firmenname, Adresse, Briefinginhalte, Dateien, Zeitstempel, Rollen und Plattformaktivitäten gehören.",
           ],
         },
         {
-          heading: "3. Legal Basis",
+          heading: "3. Zwecke der Verarbeitung",
           body: [
-            "Processing is based on contractual necessity, legitimate interests, legal obligations and, where required, consent.",
+            "Die Verarbeitung erfolgt zur Bereitstellung der Plattform, Authentifizierung, Kampagnenorganisation, Creator-Koordination, Dateiübermittlung, Terminabstimmung, Kommunikation, Support, Sicherheit und Dokumentation von Workflow-Schritten.",
+            "Daten können außerdem genutzt werden, um Plattformqualität, Stabilität und Nachvollziehbarkeit von Freigaben und Änderungen sicherzustellen.",
           ],
         },
         {
-          heading: "4. Data Sharing",
+          heading: "4. Rechtsgrundlagen",
           body: [
-            "Relevant campaign data may be shared with assigned creators, internal staff, infrastructure providers and legally required recipients.",
-            "Only the data necessary for campaign execution and platform operation is shared.",
+            "Die Verarbeitung erfolgt je nach Vorgang zur Vertragserfüllung, zur Durchführung vorvertraglicher Maßnahmen, aufgrund berechtigter Interessen, zur Erfüllung rechtlicher Pflichten oder auf Grundlage einer Einwilligung.",
+            "Soweit eine Einwilligung erforderlich ist, kann diese mit Wirkung für die Zukunft widerrufen werden.",
           ],
         },
         {
-          heading: "5. Storage and Retention",
+          heading: "5. Supabase",
           body: [
-            "We retain data for as long as necessary to provide the platform, fulfill legal obligations, resolve disputes and document workflow history.",
+            "Für Authentifizierung, Datenbankfunktionen und Speicherung nutzen wir Supabase. Dabei können Accountdaten, technische Daten und Plattformdaten verarbeitet werden.",
+            "Die Verarbeitung erfolgt zur sicheren Bereitstellung der Plattform und Verwaltung von Nutzerkonten.",
           ],
         },
         {
-          heading: "6. Your Rights",
+          heading: "6. Datei-Uploads und Speicher",
           body: [
-            "Depending on applicable law, you may have rights to access, correct, delete, restrict or object to processing of your personal data.",
+            "Hochgeladene Dateien können in Speicherlösungen verarbeitet werden, um Briefings, Assets und Deliverables bereitzustellen.",
+            "Zugriffe können aus Sicherheits- und Nachweisgründen protokolliert werden.",
+          ],
+        },
+        {
+          heading: "7. Terminbuchung über Cal.com",
+          body: [
+            "Für Terminbuchungen kann Cal.com eingesetzt werden. Dabei können Name, E-Mail-Adresse, Terminzeit, Zeitzone und weitere freiwillige Angaben verarbeitet werden.",
+            "Die Terminbuchung dient der Abstimmung von Briefinggesprächen und Projektabläufen.",
+          ],
+        },
+        {
+          heading: "8. E-Mail-Versand",
+          body: [
+            "Für System-E-Mails wie Registrierung, E-Mail-Bestätigung, Passwort-Zurücksetzung oder Benachrichtigungen können E-Mail-Dienstleister eingesetzt werden.",
+            "Dabei werden insbesondere E-Mail-Adresse, Versandzeitpunkt und technische Zustelldaten verarbeitet.",
+          ],
+        },
+        {
+          heading: "9. Weitergabe von Daten",
+          body: [
+            "Daten können an interne Mitarbeiter, technische Dienstleister, zugewiesene Creator und weitere Empfänger weitergegeben werden, soweit dies für den Plattformbetrieb oder die Kampagnenabwicklung erforderlich ist.",
+            "Eine Weitergabe erfolgt nur im notwendigen Umfang.",
+          ],
+        },
+        {
+          heading: "10. Speicherdauer",
+          body: [
+            "Daten werden gespeichert, solange sie für Accountbetrieb, Vertragsdurchführung, Support, Nachweise, rechtliche Pflichten oder berechtigte Interessen erforderlich sind.",
+            "Nach Wegfall des Zwecks werden Daten gelöscht oder anonymisiert, sofern keine gesetzlichen Aufbewahrungspflichten entgegenstehen.",
+          ],
+        },
+        {
+          heading: "11. Rechte betroffener Personen",
+          body: [
+            "Betroffene Personen haben nach Maßgabe der gesetzlichen Vorschriften Rechte auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch.",
+            "Außerdem besteht das Recht, sich bei einer zuständigen Datenschutzaufsichtsbehörde zu beschweren.",
+          ],
+        },
+        {
+          heading: "12. Sicherheit",
+          body: [
+            "Wir treffen angemessene technische und organisatorische Maßnahmen, um personenbezogene Daten gegen Verlust, Missbrauch, unbefugten Zugriff und Veränderung zu schützen.",
           ],
         },
       ],
     },
 
     agb: {
-      title: "AGB for Brands",
+      title: "AGB für Brands",
       subtitle:
-        "These General Terms and Conditions apply specifically to commercial brand use of the Primely Content platform.",
+        "Diese Allgemeinen Geschäftsbedingungen gelten für die kommerzielle Nutzung von Primely Content durch Brands.",
       version: LEGAL_VERSIONS.BRAND.agbVersion,
-      lastUpdated: "2026-04-20",
+      lastUpdated: "2026-04-24",
       sections: [
         {
-          heading: "1. Contracting Party",
+          heading: "1. Vertragspartner",
           body: [
-            "The contractual partner for platform services is Primely Content, unless otherwise stated in a separate agreement.",
+            "Vertragspartner ist [FIRMENNAME], sofern nicht in einem separaten Angebot oder Vertrag abweichend angegeben.",
           ],
         },
         {
-          heading: "2. Service Availability",
+          heading: "2. Leistungsumfang",
           body: [
-            "Primely Content aims for reliable platform availability but does not guarantee uninterrupted access at all times.",
-            "Maintenance, updates, third-party outages or security measures may temporarily affect access.",
+            "Primely Content bietet eine Plattform und begleitende Leistungen zur Strukturierung von UGC-Kampagnen, Creator-Auswahl, Dateiübermittlung, Kommunikation und Review-Prozessen.",
+            "Der konkrete Leistungsumfang ergibt sich aus dem jeweiligen Briefing, Angebot oder einer individuellen Vereinbarung.",
           ],
         },
         {
-          heading: "3. Cooperation Duties",
+          heading: "3. Vertragsschluss",
           body: [
-            "The brand must provide all required information, approvals and materials in due time.",
-            "Delays caused by missing cooperation on the brand side are the brand’s responsibility.",
+            "Die Registrierung auf der Plattform allein begründet noch keinen Anspruch auf eine bestimmte Leistung.",
+            "Ein verbindlicher Auftrag kann durch Annahme eines Angebots, schriftliche Bestätigung, Zahlung oder eine anderweitige Vereinbarung zustande kommen.",
           ],
         },
         {
-          heading: "4. Liability",
+          heading: "4. Mitwirkungspflichten der Brand",
           body: [
-            "Liability is limited to the extent permitted by applicable law.",
-            "Primely Content is not liable for campaign performance, ad platform decisions or third-party platform behavior outside its control.",
+            "Die Brand stellt alle erforderlichen Informationen, Freigaben, Materialien und Rückmeldungen rechtzeitig bereit.",
+            "Verzögerungen durch fehlende Mitwirkung der Brand können Fristen und Projektabläufe verschieben.",
           ],
         },
         {
-          heading: "5. Final Provisions",
+          heading: "5. Freigaben",
           body: [
-            "Should individual provisions become invalid, the remaining provisions remain unaffected.",
-            "Applicable law and place of jurisdiction are defined by the governing contract and mandatory law.",
+            "Freigaben durch die Brand sind verbindlich. Nach finaler Freigabe können Deliverables als abgeschlossen gelten.",
+            "Spätere Änderungen können zusätzlichen Aufwand verursachen und sind nicht automatisch im ursprünglichen Leistungsumfang enthalten.",
+          ],
+        },
+        {
+          heading: "6. Preise und Zahlung",
+          body: [
+            "Alle Preise, Zahlungsziele und Abrechnungsmodalitäten richten sich nach dem jeweiligen Angebot oder der gesonderten Vereinbarung.",
+            "Sofern nichts anderes vereinbart ist, sind Rechnungen innerhalb der angegebenen Zahlungsfrist ohne Abzug fällig.",
+          ],
+        },
+        {
+          heading: "7. Nutzungsrechte",
+          body: [
+            "Nutzungsrechte werden erst im vereinbarten Umfang und grundsätzlich erst nach vollständiger Zahlung eingeräumt, sofern nichts anderes vereinbart wurde.",
+            "Die Brand darf Inhalte nur im vereinbarten Umfang, Zeitraum, Gebiet und Kanal nutzen.",
+          ],
+        },
+        {
+          heading: "8. Gewährleistung und Qualität",
+          body: [
+            "Primely Content bemüht sich um eine sorgfältige Auswahl und strukturierte Prüfung. Subjektive Geschmacksfragen oder Performance-Erwartungen stellen keine Mängel dar, sofern das Briefing erfüllt wurde.",
+          ],
+        },
+        {
+          heading: "9. Haftung",
+          body: [
+            "Die Haftung richtet sich nach den gesetzlichen Vorschriften und ist, soweit zulässig, auf vorhersehbare, vertragstypische Schäden beschränkt.",
+            "Keine Haftung besteht für falsche Angaben der Brand, Drittplattformen, Werbeanzeigenperformance oder externe technische Störungen außerhalb des Einflussbereichs von Primely Content.",
+          ],
+        },
+        {
+          heading: "10. Schlussbestimmungen",
+          body: [
+            "Sollten einzelne Bestimmungen unwirksam sein, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt.",
+            "Es gilt das Recht von [LAND], soweit keine zwingenden Verbraucherschutzvorschriften entgegenstehen.",
           ],
         },
       ],
@@ -198,150 +305,231 @@ export const LEGAL_DOCS: Record<
 
   CREATOR: {
     terms: {
-      title: "Terms of Service for Creators",
+      title: "Nutzungsbedingungen für Creator",
       subtitle:
-        "These terms apply to all creators using the Primely Content platform.",
+        "Diese Nutzungsbedingungen gelten für Creator, die Primely Content nutzen.",
       version: LEGAL_VERSIONS.CREATOR.termsVersion,
-      lastUpdated: "2026-04-20",
+      lastUpdated: "2026-04-24",
       sections: [
         {
-          heading: "1. Scope",
+          heading: "1. Geltungsbereich",
           body: [
-            "These Terms of Service govern the use of the Primely Content platform by creators.",
-            "By registering and using the platform, the creator agrees to these terms in their current version.",
+            "Diese Nutzungsbedingungen regeln die Nutzung der Primely Content Plattform durch Creator.",
+            "Mit Registrierung und Nutzung der Plattform akzeptiert der Creator diese Bedingungen in ihrer jeweils aktuellen Fassung.",
           ],
         },
         {
-          heading: "2. Platform Access",
+          heading: "2. Account und Verifizierung",
           body: [
-            "Creators may create an account, complete a profile and access platform features depending on verification and internal review status.",
-            "Access to campaign assignments may be limited until email confirmation and staff approval are completed.",
+            "Creator können ein Konto erstellen, ihr Profil ausfüllen und Inhalte wie Profilbild, Intro-Video, Portfolio, Social Links und Preisangaben hinterlegen.",
+            "Der Zugriff auf Kampagnen kann von E-Mail-Bestätigung, Profilvollständigkeit und interner Freigabe abhängig sein.",
           ],
         },
         {
-          heading: "3. Creator Responsibilities",
+          heading: "3. Pflichten des Creators",
           body: [
-            "Creators must provide truthful profile information and keep their account data up to date.",
-            "Creators are responsible for delivering original, lawful and compliant content within requested workflow requirements.",
+            "Creator müssen vollständige und wahrheitsgemäße Angaben machen und ihr Profil aktuell halten.",
+            "Creator sind verpflichtet, nur eigene, rechtmäßige und nicht rechtsverletzende Inhalte hochzuladen.",
           ],
         },
         {
-          heading: "4. Verification and Approval",
+          heading: "4. Kampagnen und Deliverables",
           body: [
-            "Primely Content may review creator accounts, profiles, intro videos and related materials before approval.",
-            "Approval may be refused, delayed or revoked where quality, trust, compliance or business reasons justify such decision.",
+            "Creator können Kampagnen zugewiesen bekommen. Ein Anspruch auf Zuweisung bestimmter Kampagnen oder ein Mindestvolumen besteht nicht.",
+            "Deliverables sind entsprechend Briefing, Fristen, Qualitätsanforderungen und Plattformworkflow zu erstellen.",
           ],
         },
         {
-          heading: "5. Uploads and Replacements",
+          heading: "5. Review und Änderungen",
           body: [
-            "Uploaded deliverables may go through staff review and brand review.",
-            "Where changes are requested, creators may be required to submit replacements or updated versions through the platform workflow.",
+            "Deliverables können durch Staff und Brands geprüft werden. Bei Änderungswünschen kann der Creator zur Überarbeitung oder zum erneuten Upload aufgefordert werden.",
+            "Nach finaler Freigabe kann ein Deliverable gesperrt werden. Weitere Änderungen sind danach nicht garantiert möglich.",
           ],
         },
         {
-          heading: "6. Final Approval",
+          heading: "6. Rechte an Inhalten",
           body: [
-            "Once a deliverable is finally approved and locked, additional changes may no longer be possible.",
+            "Der Creator sichert zu, über alle erforderlichen Rechte an hochgeladenen Inhalten zu verfügen.",
+            "Mit Upload und Freigabe räumt der Creator die im jeweiligen Briefing oder Vertrag vereinbarten Nutzungsrechte ein.",
           ],
         },
         {
-          heading: "7. Acceptable Use",
+          heading: "7. Vergütung",
           body: [
-            "Creators may not upload unlawful, infringing, deceptive, abusive or non-compliant content.",
-            "Platform misuse may result in restricted access, rejection or account removal.",
+            "Vergütungen, Preise und Zahlungsbedingungen richten sich nach separaten Vereinbarungen, Kampagnenbedingungen oder Plattformangaben.",
+            "Ein Anspruch auf Vergütung entsteht nur für ordnungsgemäß erbrachte und freigegebene Leistungen, soweit nichts anderes vereinbart ist.",
           ],
         },
         {
-          heading: "8. Changes to the Terms",
+          heading: "8. Verbotene Inhalte",
           body: [
-            "Primely Content may update these terms for legal, product or operational reasons.",
-            "Material updates may require renewed acceptance before continued platform use.",
+            "Creator dürfen keine rechtswidrigen, diskriminierenden, beleidigenden, irreführenden, gewaltverherrlichenden, pornografischen oder sonst unzulässigen Inhalte hochladen.",
+            "Bei Verstößen kann Primely Content Inhalte entfernen, Accounts einschränken oder die Zusammenarbeit beenden.",
+          ],
+        },
+        {
+          heading: "9. Keine Beschäftigung",
+          body: [
+            "Die Nutzung der Plattform begründet kein Arbeitsverhältnis. Creator handeln, sofern nicht anders vereinbart, eigenverantwortlich und selbstständig.",
+          ],
+        },
+        {
+          heading: "10. Änderungen dieser Bedingungen",
+          body: [
+            "Primely Content kann diese Bedingungen aus rechtlichen, technischen oder organisatorischen Gründen ändern.",
+            "Wesentliche Änderungen können eine erneute Zustimmung vor weiterer Nutzung erforderlich machen.",
           ],
         },
       ],
     },
 
     privacy: {
-      title: "Privacy Policy for Creators",
+      title: "Datenschutzerklärung für Creator",
       subtitle:
-        "This privacy policy explains how Primely Content processes creator-related account and profile data.",
+        "Diese Datenschutzerklärung erklärt, wie Primely Content personenbezogene Daten von Creatorn verarbeitet.",
       version: LEGAL_VERSIONS.CREATOR.privacyVersion,
-      lastUpdated: "2026-04-20",
+      lastUpdated: "2026-04-24",
       sections: [
         {
-          heading: "1. Data We Process",
+          heading: "1. Verantwortlicher",
           body: [
-            "We process account data, profile data, social links, uploaded files, intro videos, pricing information, communication data and technical metadata.",
-            "This may include full name, contact details, country, niche information, profile media and workflow history.",
+            "Verantwortlich für die Datenverarbeitung ist [FIRMENNAME], [ADRESSE], E-Mail: [E-MAIL].",
+            "Bitte ersetze diese Platzhalter vor Veröffentlichung durch deine tatsächlichen Unternehmensdaten.",
           ],
         },
         {
-          heading: "2. Purpose of Processing",
+          heading: "2. Verarbeitete Daten",
           body: [
-            "We process data to operate the platform, evaluate profiles, manage assignments, coordinate workflows, store files and provide support.",
+            "Wir verarbeiten Accountdaten, Kontaktdaten, Profildaten, Social Links, Portfolioangaben, Preisangaben, Profilbilder, Intro-Videos, Uploads, Kommunikationsdaten, Supportnachrichten und technische Metadaten.",
+            "Dazu können Name, E-Mail-Adresse, Telefonnummer, Adresse, Land, Nischen, Bio, Equipment, Dateien, Zeitstempel und Workflow-Status gehören.",
           ],
         },
         {
-          heading: "3. Data Sharing",
+          heading: "3. Zwecke der Verarbeitung",
           body: [
-            "Relevant profile and workflow data may be shared with internal staff and, where necessary, with brands involved in campaign execution.",
-            "Only data required for the intended platform workflow is shared.",
+            "Die Verarbeitung erfolgt zur Bereitstellung der Plattform, Authentifizierung, Profilprüfung, Creator-Freigabe, Kampagnenzuweisung, Dateiübermittlung, Kommunikation, Support, Qualitätssicherung und Dokumentation.",
           ],
         },
         {
-          heading: "4. Retention",
+          heading: "4. Rechtsgrundlagen",
           body: [
-            "We retain creator data as long as reasonably necessary for account operation, support, legal obligations and workflow documentation.",
+            "Die Verarbeitung erfolgt je nach Vorgang zur Vertragserfüllung, zur Durchführung vorvertraglicher Maßnahmen, aufgrund berechtigter Interessen, zur Erfüllung rechtlicher Pflichten oder auf Grundlage einer Einwilligung.",
           ],
         },
         {
-          heading: "5. Your Rights",
+          heading: "5. Supabase",
           body: [
-            "Depending on applicable law, you may have rights to access, correct, delete, restrict or object to processing of your personal data.",
+            "Für Authentifizierung, Datenbankfunktionen und Speicherung nutzen wir Supabase. Dabei können Accountdaten, technische Daten und Plattformdaten verarbeitet werden.",
+          ],
+        },
+        {
+          heading: "6. Datei-Uploads",
+          body: [
+            "Hochgeladene Dateien wie Intro-Videos, Profilbilder und Deliverables werden verarbeitet, um Profile zu prüfen, Creator zu matchen und Kampagnen abzuwickeln.",
+            "Je nach Kampagne können freigegebene Inhalte Brands oder internen Mitarbeitern zugänglich gemacht werden.",
+          ],
+        },
+        {
+          heading: "7. Weitergabe von Daten",
+          body: [
+            "Creator-Daten können an interne Mitarbeiter, technische Dienstleister und Brands weitergegeben werden, soweit dies für Profilprüfung, Kampagnenmatching oder Projektabwicklung erforderlich ist.",
+            "Es werden nur die Daten geteilt, die für den jeweiligen Zweck notwendig sind.",
+          ],
+        },
+        {
+          heading: "8. Speicherdauer",
+          body: [
+            "Daten werden gespeichert, solange sie für Accountbetrieb, Kampagnenabwicklung, Nachweise, Support, rechtliche Pflichten oder berechtigte Interessen erforderlich sind.",
+          ],
+        },
+        {
+          heading: "9. Rechte betroffener Personen",
+          body: [
+            "Betroffene Personen haben nach Maßgabe der gesetzlichen Vorschriften Rechte auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch.",
+            "Außerdem besteht das Recht, sich bei einer Datenschutzaufsichtsbehörde zu beschweren.",
+          ],
+        },
+        {
+          heading: "10. Sicherheit",
+          body: [
+            "Wir treffen angemessene technische und organisatorische Maßnahmen, um personenbezogene Daten gegen Verlust, Missbrauch, unbefugten Zugriff und Veränderung zu schützen.",
           ],
         },
       ],
     },
 
     agb: {
-      title: "AGB for Creators",
+      title: "AGB für Creator",
       subtitle:
-        "These General Terms and Conditions apply specifically to creator use of the Primely Content platform.",
+        "Diese Allgemeinen Geschäftsbedingungen gelten für die Nutzung von Primely Content durch Creator.",
       version: LEGAL_VERSIONS.CREATOR.agbVersion,
-      lastUpdated: "2026-04-20",
+      lastUpdated: "2026-04-24",
       sections: [
         {
-          heading: "1. Platform Role",
+          heading: "1. Plattformrolle",
           body: [
-            "Primely Content provides a structured workflow environment for creator onboarding, review, assignment and deliverable handling.",
+            "Primely Content stellt eine Plattform zur Creator-Registrierung, Profilprüfung, Kampagnenzuweisung, Dateiübermittlung und Kommunikation bereit.",
           ],
         },
         {
-          heading: "2. No Assignment Guarantee",
+          heading: "2. Keine Auftragsgarantie",
           body: [
-            "Account registration does not guarantee campaign assignment, approval or a minimum volume of work.",
+            "Die Registrierung als Creator begründet keinen Anspruch auf Kampagnen, Aufträge, Freigabe oder ein bestimmtes Einkommen.",
           ],
         },
         {
-          heading: "3. Quality and Compliance",
+          heading: "3. Profilprüfung",
           body: [
-            "Creators must follow campaign instructions, legal requirements and platform workflow rules.",
-            "Content quality, timeliness and compliance may affect approval and future assignment decisions.",
+            "Primely Content kann Creator-Profile, Intro-Videos, Social Links, Uploads und sonstige Angaben prüfen.",
+            "Eine Freigabe kann verweigert, widerrufen oder verzögert werden, wenn Qualitäts-, Vertrauens-, Compliance- oder Geschäftsgründe dies rechtfertigen.",
           ],
         },
         {
-          heading: "4. Liability",
+          heading: "4. Leistungserbringung",
           body: [
-            "Liability is limited to the extent permitted by applicable law.",
-            "Primely Content is not liable for third-party platform behavior, external algorithm changes or creator-side device failures beyond its control.",
+            "Creator müssen Briefings sorgfältig lesen und Deliverables entsprechend der Vorgaben erstellen.",
+            "Fristen, Formatvorgaben, Qualitätsanforderungen und Änderungswünsche sind einzuhalten, soweit sie vereinbart oder im Workflow kommuniziert wurden.",
           ],
         },
         {
-          heading: "5. Final Provisions",
+          heading: "5. Abnahme und Änderungen",
           body: [
-            "Should individual provisions become invalid, the remaining provisions remain unaffected.",
-            "Applicable law and place of jurisdiction are defined by the governing contract and mandatory law.",
+            "Deliverables können durch Staff und Brand geprüft werden. Änderungswünsche sind im angemessenen Rahmen umzusetzen, sofern sie vom Briefing gedeckt sind.",
+            "Final freigegebene Deliverables können gesperrt werden.",
+          ],
+        },
+        {
+          heading: "6. Rechte und Freistellung",
+          body: [
+            "Creator sichern zu, dass ihre Inhalte frei von Rechten Dritter sind oder alle erforderlichen Rechte vorliegen.",
+            "Creator stellen Primely Content von Ansprüchen Dritter frei, die aus rechtswidrigen oder rechtsverletzenden Inhalten des Creators entstehen, soweit der Creator dies zu vertreten hat.",
+          ],
+        },
+        {
+          heading: "7. Vergütung",
+          body: [
+            "Vergütung richtet sich nach separaten Vereinbarungen, Kampagnenbedingungen oder Plattformangaben.",
+            "Nicht freigegebene, verspätete oder nicht vertragsgemäß erbrachte Leistungen können von der Vergütung ausgeschlossen sein, soweit rechtlich zulässig und vereinbart.",
+          ],
+        },
+        {
+          heading: "8. Haftung",
+          body: [
+            "Primely Content haftet nach den gesetzlichen Vorschriften bei Vorsatz und grober Fahrlässigkeit.",
+            "Für leichte Fahrlässigkeit haftet Primely Content nur bei Verletzung wesentlicher Vertragspflichten und beschränkt auf den vorhersehbaren, vertragstypischen Schaden.",
+          ],
+        },
+        {
+          heading: "9. Beendigung der Nutzung",
+          body: [
+            "Creator können die Nutzung der Plattform beenden. Primely Content kann Accounts einschränken oder sperren, wenn Verstöße gegen diese Bedingungen, rechtliche Risiken oder Sicherheitsgründe vorliegen.",
+          ],
+        },
+        {
+          heading: "10. Schlussbestimmungen",
+          body: [
+            "Sollten einzelne Bestimmungen unwirksam sein, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt.",
+            "Es gilt das Recht von [LAND], soweit keine zwingenden gesetzlichen Vorschriften entgegenstehen.",
           ],
         },
       ],
