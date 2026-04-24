@@ -17,7 +17,14 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     async function run() {
       try {
-        // 🔑 User nach Email-Confirm holen
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get("code");
+
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+        }
+
         const { data, error } = await supabase.auth.getUser();
         if (error) throw error;
 
@@ -35,7 +42,6 @@ export default function AuthCallbackPage() {
           throw new Error("Keine gültige Rolle gefunden.");
         }
 
-        // 🔥 HIER passiert jetzt der Sync (richtiger Zeitpunkt!)
         const syncRes = await fetch("/api/auth/sync", {
           method: "POST",
           headers: {
@@ -60,8 +66,6 @@ export default function AuthCallbackPage() {
         }
 
         setMessage("E-Mail bestätigt. Weiterleitung...");
-
-        // 🚀 Redirect direkt ins Dashboard
         window.location.href = dashboardFor(role);
       } catch (err: any) {
         setMessage(err?.message ?? "Bestätigung fehlgeschlagen.");
