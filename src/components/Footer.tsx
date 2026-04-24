@@ -4,29 +4,40 @@ export default function Footer() {
   return (
     <footer className="mt-16 w-full border-t bg-white/60">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8 md:flex-row md:items-center md:justify-between">
+        
+        {/* Left */}
         <div>
-          <div className="text-sm font-semibold text-gray-900">Primely Content</div>
+          <div className="text-sm font-semibold text-gray-900">
+            Primely Content
+          </div>
           <div className="mt-1 text-sm text-gray-500">
-            © {new Date().getFullYear()} Primely Content. All rights reserved.
+            © {new Date().getFullYear()} Primely Content. Alle Rechte vorbehalten.
           </div>
         </div>
 
+        {/* Right */}
         <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-600">
-          <Link href="/imprint" className="hover:text-gray-900">
-            Imprint
+          
+          <Link href="/legal/imprint" className="hover:text-gray-900">
+            Impressum
           </Link>
-          <Link href="/privacy" className="hover:text-gray-900">
-            Privacy Policy
+
+          <Link href="/legal/privacy" className="hover:text-gray-900">
+            Datenschutz
           </Link>
-          <Link href="/terms" className="hover:text-gray-900">
-            Terms
+
+          <Link href="/legal/terms" className="hover:text-gray-900">
+            Nutzungsbedingungen
           </Link>
-          <Link href="/cookies" className="hover:text-gray-900">
-            Cookie Policy
+
+          <Link href="/legal/cookies" className="hover:text-gray-900">
+            Cookies
           </Link>
-          <Link href="/agb" className="hover:text-gray-900">
+
+          <Link href="/legal/agb" className="hover:text-gray-900">
             AGB
           </Link>
+
         </div>
       </div>
     </footer>
