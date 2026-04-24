@@ -95,6 +95,7 @@ export default function BrandRegisterPage() {
         email,
         password,
         options: {
+          emailRedirectTo: "https://www.primely-content.com/login",
           data: {
             role,
             companyName: companyName.trim(),

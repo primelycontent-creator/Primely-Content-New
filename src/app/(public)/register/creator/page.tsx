@@ -93,6 +93,7 @@ export default function CreatorRegisterPage() {
         email,
         password,
         options: {
+          emailRedirectTo: "https://www.primely-content.com/login",
           data: {
             role,
             fullName: fullName.trim(),
