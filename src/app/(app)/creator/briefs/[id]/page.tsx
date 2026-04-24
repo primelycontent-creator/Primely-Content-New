@@ -70,6 +70,18 @@ function formatBytes(bytes?: number | null) {
   return `${size.toFixed(unit === 0 ? 0 : 2)} ${units[unit]}`;
 }
 
+function statusLabel(status: string) {
+  const s = String(status).toUpperCase();
+  if (s === "IN_PROGRESS") return "In Bearbeitung";
+  if (s === "DONE") return "Abgeschlossen";
+  if (s === "REVIEW") return "In Prüfung";
+  if (s === "DECLINED") return "Abgelehnt";
+  if (s === "PENDING") return "Ausstehend";
+  if (s === "CHANGES_REQUESTED") return "Änderungen angefragt";
+  if (s === "APPROVED") return "Freigegeben";
+  return status.replaceAll("_", " ");
+}
+
 function statusBadge(status: string) {
   const s = String(status).toUpperCase();
   const base = "rounded-full border px-3 py-1 text-xs font-semibold";
@@ -80,6 +92,16 @@ function statusBadge(status: string) {
   if (s === "DECLINED") return `${base} border-rose-200 bg-rose-50 text-rose-900`;
 
   return `${base} border-gray-200 bg-white text-gray-800`;
+}
+
+function licenseLabel(v: string | null) {
+  if (!v) return "—";
+  if (v === "M1") return "1 Monat";
+  if (v === "M3") return "3 Monate";
+  if (v === "M6") return "6 Monate";
+  if (v === "M12") return "12 Monate";
+  if (v === "UNLIMITED") return "Unbegrenzt";
+  return v;
 }
 
 export default function CreatorBriefInfoPage() {
@@ -125,9 +147,9 @@ export default function CreatorBriefInfoPage() {
 
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">
-          <div className="text-sm text-gray-600">Loading…</div>
+      <div className="px-4 py-6 sm:p-8">
+        <div className="rounded-3xl border bg-white/70 p-6 shadow-sm sm:p-10">
+          <div className="text-sm text-gray-600">Wird geladen...</div>
         </div>
       </div>
     );
@@ -135,9 +157,9 @@ export default function CreatorBriefInfoPage() {
 
   if (!brief) {
     return (
-      <div className="p-8">
-        <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">
-          <div className="text-sm text-gray-600">{error ?? "Brief not found"}</div>
+      <div className="px-4 py-6 sm:p-8">
+        <div className="rounded-3xl border bg-white/70 p-6 shadow-sm sm:p-10">
+          <div className="text-sm text-gray-600">{error ?? "Briefing wurde nicht gefunden."}</div>
         </div>
       </div>
     );
@@ -146,24 +168,22 @@ export default function CreatorBriefInfoPage() {
   const uploadedCount = brief.deliverables.length;
 
   return (
-    <div className="p-8">
-      <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">
+    <div className="px-4 py-6 sm:p-8">
+      <div className="rounded-3xl border bg-white/70 p-5 shadow-sm sm:p-8 lg:p-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
             <div className="text-xs font-semibold tracking-wide text-gray-600">BRIEFING</div>
-            <h1 className="mt-2 font-serif text-5xl leading-[0.95] tracking-tight text-gray-900">
+            <h1 className="mt-2 font-serif text-4xl leading-[0.95] tracking-tight text-gray-900 sm:text-5xl">
               {brief.title}
             </h1>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className={statusBadge(brief.status)}>
-                {brief.status.replace("_", " ")}
+              <span className={statusBadge(brief.status)}>{statusLabel(brief.status)}</span>
+              <span className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-800">
+                {brief.deliverableCount} Video{brief.deliverableCount > 1 ? "s" : ""}
               </span>
               <span className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-800">
-                {brief.deliverableCount} video{brief.deliverableCount > 1 ? "s" : ""}
-              </span>
-              <span className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-800">
-                Uploaded: {uploadedCount}/{brief.deliverableCount}
+                Hochgeladen: {uploadedCount}/{brief.deliverableCount}
               </span>
             </div>
 
@@ -172,13 +192,13 @@ export default function CreatorBriefInfoPage() {
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
               onClick={() => router.push("/creator/dashboard")}
               className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
             >
-              Back
+              Zurück
             </button>
 
             <button
@@ -186,56 +206,59 @@ export default function CreatorBriefInfoPage() {
               onClick={() => router.push(`/creator/uploads/${brief.id}`)}
               className="rounded-full bg-emerald-950 px-6 py-3 text-sm font-semibold text-white shadow hover:opacity-95"
             >
-              Go to Uploads
+              Zu den Uploads
             </button>
           </div>
         </div>
 
-        {error && (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        {error ? (
+          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
             {error}
           </div>
-        )}
+        ) : null}
 
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          <div className="rounded-3xl border bg-white p-6">
-            <div className="text-sm font-semibold text-gray-900">Campaign Overview</div>
+          <div className="rounded-3xl border bg-white p-5 sm:p-6">
+            <div className="text-sm font-semibold text-gray-900">Kampagnenübersicht</div>
 
             <div className="mt-4 space-y-2 text-sm text-gray-700">
               <div>
                 <span className="text-gray-500">Deadline:</span>{" "}
-                {brief.deadline ? new Date(brief.deadline).toLocaleDateString() : "—"}
+                {brief.deadline ? new Date(brief.deadline).toLocaleDateString("de-DE") : "—"}
               </div>
               <div>
-                <span className="text-gray-500">License:</span> {brief.licenseTerm ?? "—"}
+                <span className="text-gray-500">Lizenz:</span> {licenseLabel(brief.licenseTerm)}
               </div>
               <div>
-                <span className="text-gray-500">Niche group:</span> {brief.nicheGroup ?? "—"}
+                <span className="text-gray-500">Nischengruppe:</span> {brief.nicheGroup ?? "—"}
               </div>
               <div>
-                <span className="text-gray-500">Niches:</span>{" "}
+                <span className="text-gray-500">Nischen:</span>{" "}
                 {(brief.niches ?? []).length ? brief.niches.join(", ") : "—"}
               </div>
               <div>
-                <span className="text-gray-500">Required deliverables:</span> {brief.deliverableCount}
+                <span className="text-gray-500">Benötigte Deliverables:</span>{" "}
+                {brief.deliverableCount}
               </div>
             </div>
 
             {brief.description ? (
               <div className="mt-5 rounded-2xl border bg-white/60 p-4">
-                <div className="text-xs font-semibold tracking-wide text-gray-600">DESCRIPTION</div>
-                <p className="mt-2 whitespace-pre-wrap text-sm text-gray-700">
+                <div className="text-xs font-semibold tracking-wide text-gray-600">
+                  BESCHREIBUNG
+                </div>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-gray-700">
                   {brief.description}
                 </p>
               </div>
             ) : null}
           </div>
 
-          <div className="rounded-3xl border bg-white p-6">
-            <div className="text-sm font-semibold text-gray-900">Brief Attachments</div>
+          <div className="rounded-3xl border bg-white p-5 sm:p-6">
+            <div className="text-sm font-semibold text-gray-900">Briefing-Dateien</div>
 
             {(brief.assets ?? []).length === 0 ? (
-              <p className="mt-4 text-sm text-gray-600">No attachments from brand.</p>
+              <p className="mt-4 text-sm text-gray-600">Keine Dateien von der Brand vorhanden.</p>
             ) : (
               <div className="mt-4 space-y-3">
                 {brief.assets.map((a) => (
@@ -253,12 +276,12 @@ export default function CreatorBriefInfoPage() {
           </div>
         </div>
 
-        <div className="mt-6 rounded-3xl border bg-white p-6">
-          <div className="flex items-center justify-between gap-4">
+        <div className="mt-6 rounded-3xl border bg-white p-5 sm:p-6">
+          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
             <div>
-              <div className="text-sm font-semibold text-gray-900">Your Upload Status</div>
-              <p className="mt-1 text-xs text-gray-500">
-                Quick overview of your uploaded deliverables for this briefing.
+              <div className="text-sm font-semibold text-gray-900">Dein Upload-Status</div>
+              <p className="mt-1 text-xs leading-5 text-gray-500">
+                Überblick über deine hochgeladenen Deliverables für dieses Briefing.
               </p>
             </div>
 
@@ -267,12 +290,12 @@ export default function CreatorBriefInfoPage() {
               onClick={() => router.push(`/creator/uploads/${brief.id}`)}
               className="rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50"
             >
-              Manage uploads
+              Uploads verwalten
             </button>
           </div>
 
           {(brief.deliverables ?? []).length === 0 ? (
-            <p className="mt-4 text-sm text-gray-600">No deliverables uploaded yet.</p>
+            <p className="mt-4 text-sm text-gray-600">Noch keine Deliverables hochgeladen.</p>
           ) : (
             <div className="mt-4 space-y-2">
               {brief.deliverables.map((d) => (
@@ -286,26 +309,26 @@ export default function CreatorBriefInfoPage() {
                     </div>
                     <div className="mt-1 text-xs text-gray-500">
                       {d.mimeType ?? "—"} • {formatBytes(d.sizeBytes)} •{" "}
-                      {new Date(d.createdAt).toLocaleString()}
+                      {new Date(d.createdAt).toLocaleString("de-DE")}
                     </div>
 
                     {d.staffFeedback ? (
                       <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                        <div className="font-semibold">Staff feedback</div>
+                        <div className="font-semibold">Staff-Feedback</div>
                         <div className="mt-1 whitespace-pre-wrap">{d.staffFeedback}</div>
                       </div>
                     ) : null}
 
                     {String(d.brandStatus).toUpperCase() === "CHANGES_REQUESTED" && d.brandFeedback ? (
                       <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                        <div className="font-semibold">Brand feedback</div>
+                        <div className="font-semibold">Brand-Feedback</div>
                         <div className="mt-1 whitespace-pre-wrap">{d.brandFeedback}</div>
                       </div>
                     ) : null}
                   </div>
 
-                  <span className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-800">
-                    {d.status.replace("_", " ")}
+                  <span className="w-fit rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-800">
+                    {statusLabel(d.status)}
                   </span>
                 </div>
               ))}
