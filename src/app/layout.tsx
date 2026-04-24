@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import NotificationBell from "@/components/NotificationBell";
 import LegalAcceptanceGate from "@/components/legal/LegalAcceptanceGate";
+import CookieBanner from "@/components/CookieBanner";
 
 export const metadata: Metadata = {
   title: "Primely Content",
