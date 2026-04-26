@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import NotificationBell from "@/components/NotificationBell";
 import LegalAcceptanceGate from "@/components/legal/LegalAcceptanceGate";
 import CookieBanner from "@/components/CookieBanner";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "Primely Content",
@@ -24,6 +25,7 @@ export default function RootLayout({
         <NotificationBell />
         <LegalAcceptanceGate>{children}</LegalAcceptanceGate>
         <Footer />
+        <Analytics />
       </body>
     </html>
   );
