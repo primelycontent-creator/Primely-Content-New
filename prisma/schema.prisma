@@ -438,3 +438,23 @@ model LegalAcceptance {
   @@index([userId])
   @@index([documentId])
 }
+model CalendarBooking {
+  id              String   @id @default(cuid())
+  calBookingId    String?  @unique
+  calUid          String?  @unique
+  triggerEvent    String
+  eventTypeId     Int?
+  eventTitle      String?
+  bookingType     String?
+  briefId         String?
+  attendeeName    String?
+  attendeeEmail   String?
+  attendeePhone   String?
+  startTime       DateTime?
+  endTime         DateTime?
+  videoCallUrl    String?
+  status          String?
+  rawPayload      Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
