@@ -8,7 +8,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (e: any) {
-    console.error("WEBHOOK ERROR:", e);
-    return NextResponse.json({ error: "Webhook error" }, { status: 500 });
+    console.error("CAL WEBHOOK ERROR:", e);
+    return NextResponse.json(
+      { error: e?.message ?? "Webhook error" },
+      { status: 500 }
+    );
   }
 }

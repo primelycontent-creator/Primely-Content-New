@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-export function middleware(_req: NextRequest) {
+export function middleware(req: NextRequest) {
+  if (req.nextUrl.pathname.startsWith("/api/webhooks/cal")) {
+    return NextResponse.next();
+  }
   return NextResponse.next();
 }
 
