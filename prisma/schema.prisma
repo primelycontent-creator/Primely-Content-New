@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 enum UserRole {
@@ -282,9 +283,10 @@ model Brief {
 
   brand User @relation("BriefsByBrand", fields: [brandId], references: [id], onDelete: Cascade)
 
-  deliverables   Deliverable[]
-  assets         BriefAsset[]
-  supportTickets SupportTicket[]
+  deliverables     Deliverable[]
+  assets           BriefAsset[]
+  supportTickets   SupportTicket[]
+  calendarBookings CalendarBooking[]
 
   @@index([brandId])
   @@index([assignedCreatorId])
@@ -438,23 +440,40 @@ model LegalAcceptance {
   @@index([userId])
   @@index([documentId])
 }
+
 model CalendarBooking {
-  id              String   @id @default(cuid())
-  calBookingId    String?  @unique
-  calUid          String?  @unique
-  triggerEvent    String
-  eventTypeId     Int?
-  eventTitle      String?
-  bookingType     String?
-  briefId         String?
-  attendeeName    String?
-  attendeeEmail   String?
-  attendeePhone   String?
-  startTime       DateTime?
-  endTime         DateTime?
-  videoCallUrl    String?
-  status          String?
-  rawPayload      Json
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id String @id @default(cuid())
+
+  calBookingId String? @unique
+  calUid       String? @unique
+
+  triggerEvent String
+
+  eventTypeId Int?
+  eventTitle  String?
+  bookingType String?
+
+  briefId String?
+  brief   Brief? @relation(fields: [briefId], references: [id], onDelete: SetNull)
+
+  attendeeName  String?
+  attendeeEmail String?
+  attendeePhone String?
+
+  startTime DateTime?
+  endTime   DateTime?
+
+  videoCallUrl String?
+  status       String?
+
+  rawPayload Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([briefId])
+  @@index([bookingType])
+  @@index([attendeeEmail])
+  @@index([startTime])
+  @@index([status])
 }

@@ -49,7 +49,7 @@ export async function POST(req: Request) {
       ? "FOLLOW_UP"
       : "NEW_BRIEFING";
 
-    const savedBooking = await prisma.CalendarBooking.upsert({
+    const savedBooking = await prisma.calendarBooking.upsert({
       where: {
         calUid: calUid ?? `missing-${Date.now()}`,
       },
