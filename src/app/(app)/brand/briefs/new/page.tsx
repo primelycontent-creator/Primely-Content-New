@@ -10,12 +10,14 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+const CAL_BOOKING_URL = "DEIN_CAL_LINK_HIER";
+
 const LICENSE_OPTIONS = [
-  "1 Month",
-  "3 Months",
-  "6 Months",
-  "12 Months",
-  "Unlimited",
+  "1 Monat",
+  "3 Monate",
+  "6 Monate",
+  "12 Monate",
+  "Unbegrenzt",
 ] as const;
 
 type LicenseLabel = (typeof LICENSE_OPTIONS)[number];
@@ -118,12 +120,12 @@ function Section(props: {
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border bg-white p-8">
-      <div className="flex items-start justify-between gap-4">
+    <section className="rounded-3xl border bg-white p-5 sm:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">{props.title}</h2>
           {props.subtitle ? (
-            <p className="mt-1 text-sm text-gray-600">{props.subtitle}</p>
+            <p className="mt-1 text-sm leading-6 text-gray-600">{props.subtitle}</p>
           ) : null}
         </div>
         {props.right ? <div className="shrink-0">{props.right}</div> : null}
@@ -169,20 +171,20 @@ async function presignUpload(token: string, bucket: string, path: string) {
 
   const { json, text } = await readSafeJson(res);
   if (!res.ok) {
-    throw new Error(json?.error ?? `Presign failed: ${text.slice(0, 200)}`);
+    throw new Error(json?.error ?? `Upload-Vorbereitung fehlgeschlagen: ${text.slice(0, 200)}`);
   }
   if (!json?.token || !json?.path) {
-    throw new Error("Presign returned missing token/path");
+    throw new Error("Upload-Vorbereitung hat keinen Token/Pfad zurückgegeben.");
   }
 
   return json as { bucket: string; path: string; token: string; signedUrl?: string };
 }
 
 function mapLicenseToApi(value: LicenseLabel) {
-  if (value === "1 Month") return "M1";
-  if (value === "3 Months") return "M3";
-  if (value === "6 Months") return "M6";
-  if (value === "12 Months") return "M12";
+  if (value === "1 Monat") return "M1";
+  if (value === "3 Monate") return "M3";
+  if (value === "6 Monate") return "M6";
+  if (value === "12 Monate") return "M12";
   return "UNLIMITED";
 }
 
@@ -202,9 +204,10 @@ export default function NewBriefPage() {
 
   const [title, setTitle] = useState("");
   const [deadline, setDeadline] = useState<string>("");
-  const [licenseTerm, setLicenseTerm] = useState<LicenseLabel>("3 Months");
+  const [licenseTerm, setLicenseTerm] = useState<LicenseLabel>("3 Monate");
   const [deliverableCount, setDeliverableCount] = useState<number>(1);
   const [description, setDescription] = useState("");
+  const [calendarConfirmed, setCalendarConfirmed] = useState(false);
 
   const groups = Object.keys(NICHE_GROUPS) as NicheGroup[];
   const [activeGroup, setActiveGroup] = useState<NicheGroup>(groups[0]);
@@ -213,6 +216,18 @@ export default function NewBriefPage() {
 
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const calUrl = useMemo(() => {
+    if (!CAL_BOOKING_URL || CAL_BOOKING_URL === "DEIN_CAL_LINK_HIER") {
+      return "";
+    }
+
+    const url = new URL(CAL_BOOKING_URL);
+    if (contactName) url.searchParams.set("name", contactName);
+    if (contactEmail) url.searchParams.set("email", contactEmail);
+    if (title) url.searchParams.set("notes", `Briefing: ${title}`);
+    return url.toString();
+  }, [contactName, contactEmail, title]);
 
   useEffect(() => {
     async function loadProfile() {
@@ -243,7 +258,7 @@ export default function NewBriefPage() {
 
         setProfile(json.profile as BrandProfile);
       } catch (e: any) {
-        alert(e?.message ?? "Failed to load brand profile");
+        alert(e?.message ?? "Brand-Profil konnte nicht geladen werden.");
       } finally {
         setProfileLoading(false);
       }
@@ -274,7 +289,7 @@ export default function NewBriefPage() {
   }
 
   const nichesHint = useMemo(
-    () => `${selectedNiches.length}/5 selected`,
+    () => `${selectedNiches.length}/5 ausgewählt`,
     [selectedNiches.length]
   );
 
@@ -284,10 +299,19 @@ export default function NewBriefPage() {
       !!companyName.trim() &&
       !!contactName.trim() &&
       !!contactEmail.trim() &&
+      calendarConfirmed &&
       !saving &&
       !uploading
     );
-  }, [title, companyName, contactName, contactEmail, saving, uploading]);
+  }, [
+    title,
+    companyName,
+    contactName,
+    contactEmail,
+    calendarConfirmed,
+    saving,
+    uploading,
+  ]);
 
   async function requireSession() {
     const { data } = await supabase.auth.getSession();
@@ -322,16 +346,17 @@ export default function NewBriefPage() {
         contactName: contactName.trim() || null,
         contactEmail: contactEmail.trim() || null,
         contactPhone: contactPhone.trim() || null,
+        consultationRequired: true,
       }),
     });
 
     const { json, text } = await readSafeJson(res);
     if (!res.ok) {
-      throw new Error(json?.error ?? `Create brief failed: ${text.slice(0, 200)}`);
+      throw new Error(json?.error ?? `Briefing konnte nicht erstellt werden: ${text.slice(0, 200)}`);
     }
 
     const briefId = (json?.brief?.id || json?.briefId) as string | undefined;
-    if (!briefId) throw new Error("Create brief returned no briefId");
+    if (!briefId) throw new Error("Briefing wurde erstellt, aber keine Briefing-ID zurückgegeben.");
 
     return briefId;
   }
@@ -355,7 +380,7 @@ export default function NewBriefPage() {
             contentType: file.type || "application/octet-stream",
           });
 
-        if (up.error) throw new Error(up.error.message ?? "Upload failed");
+        if (up.error) throw new Error(up.error.message ?? "Upload fehlgeschlagen.");
       }
     } finally {
       setUploading(false);
@@ -370,11 +395,16 @@ export default function NewBriefPage() {
 
     const { json, text } = await readSafeJson(res);
     if (!res.ok) {
-      throw new Error(json?.error ?? `Submit failed: ${text.slice(0, 200)}`);
+      throw new Error(json?.error ?? `Einreichen fehlgeschlagen: ${text.slice(0, 200)}`);
     }
   }
 
   async function onSubmit() {
+    if (!calendarConfirmed) {
+      alert("Bitte buche zuerst den 30-minütigen Termin und bestätige danach die Checkbox.");
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -388,7 +418,7 @@ export default function NewBriefPage() {
       router.push("/brand/dashboard");
       router.refresh();
     } catch (e: any) {
-      alert(e?.message ?? "Unknown error");
+      alert(e?.message ?? "Unbekannter Fehler");
     } finally {
       setSaving(false);
       setUploading(false);
@@ -396,69 +426,67 @@ export default function NewBriefPage() {
   }
 
   if (profileLoading) {
-    return <div className="p-8">Loading profile...</div>;
+    return <div className="px-4 py-6 sm:p-8">Profil wird geladen...</div>;
   }
 
   return (
-    <div className="p-8">
-      <div className="mx-auto max-w-4xl rounded-3xl border bg-white/80 p-10 shadow-sm">
+    <div className="px-4 py-6 sm:p-8">
+      <div className="mx-auto max-w-4xl rounded-3xl border bg-white/80 p-5 shadow-sm sm:p-8 lg:p-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div>
-            <h1 className="font-serif text-5xl leading-[0.95] tracking-tight text-gray-900">
-              Create Briefing
+            <h1 className="font-serif text-4xl leading-[0.95] tracking-tight text-gray-900 sm:text-5xl">
+              Briefing erstellen
             </h1>
-            <p className="mt-3 text-sm text-gray-600">
-              Create a new brief, upload optional files, and submit it to staff review.
+            <p className="mt-3 text-sm leading-6 text-gray-600">
+              Erstelle ein neues Briefing, lade optional Dateien hoch und buche direkt den ersten 30-minütigen Termin.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link
-              href="/brand/dashboard"
-              className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-            >
-              Back
-            </Link>
-          </div>
+          <Link
+            href="/brand/dashboard"
+            className="w-fit rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+          >
+            Zurück
+          </Link>
         </div>
 
         <div className="mt-10 space-y-6">
           <Section
-            title="Contact Information"
-            subtitle="Automatically pulled from your brand profile"
+            title="Kontaktinformationen"
+            subtitle="Diese Daten werden automatisch aus deinem Brand-Profil übernommen."
             right={
               <Link
                 href="/brand/profile"
                 className="text-xs font-semibold text-gray-500 underline"
               >
-                Edit profile
+                Profil bearbeiten
               </Link>
             }
           >
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="text-sm font-medium text-gray-700">Company name</label>
+                <label className="text-sm font-medium text-gray-700">Firmenname</label>
                 <div className="mt-2">
                   <Input value={companyName} readOnly />
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Contact person</label>
+                <label className="text-sm font-medium text-gray-700">Ansprechpartner</label>
                 <div className="mt-2">
                   <Input value={contactName} readOnly />
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Email</label>
+                <label className="text-sm font-medium text-gray-700">E-Mail</label>
                 <div className="mt-2">
                   <Input value={contactEmail} readOnly />
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700">Phone</label>
+                <label className="text-sm font-medium text-gray-700">Telefon</label>
                 <div className="mt-2">
                   <Input value={contactPhone} readOnly />
                 </div>
@@ -466,13 +494,13 @@ export default function NewBriefPage() {
             </div>
           </Section>
 
-          <Section title="Campaign Information" subtitle="Basic briefing data">
+          <Section title="Kampagneninformationen" subtitle="Die wichtigsten Daten für dein Briefing.">
             <div className="grid gap-5">
               <div>
-                <label className="text-sm font-medium text-gray-700">Briefing title</label>
+                <label className="text-sm font-medium text-gray-700">Briefing-Titel</label>
                 <div className="mt-2">
                   <Input
-                    placeholder="e.g. TikTok UGC for new product"
+                    placeholder="z. B. TikTok UGC für neues Produkt"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                   />
@@ -488,34 +516,34 @@ export default function NewBriefPage() {
                       onChange={(e) => setDeadline(e.target.value)}
                       className="w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-950/20"
                     >
-                      <option value="">No deadline</option>
-                      <option value="7">7 days</option>
-                      <option value="14">14 days</option>
-                      <option value="30">30 days</option>
-                      <option value="60">60 days</option>
+                      <option value="">Keine Deadline</option>
+                      <option value="7">7 Tage</option>
+                      <option value="14">14 Tage</option>
+                      <option value="30">30 Tage</option>
+                      <option value="60">60 Tage</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Number of videos</label>
+                  <label className="text-sm font-medium text-gray-700">Anzahl Videos</label>
                   <div className="mt-2">
                     <select
                       value={String(deliverableCount)}
                       onChange={(e) => setDeliverableCount(Number(e.target.value))}
                       className="w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-950/20"
                     >
-                      <option value="1">1 video</option>
-                      <option value="2">2 videos</option>
-                      <option value="3">3 videos</option>
-                      <option value="4">4 videos</option>
-                      <option value="5">5 videos</option>
+                      <option value="1">1 Video</option>
+                      <option value="2">2 Videos</option>
+                      <option value="3">3 Videos</option>
+                      <option value="4">4 Videos</option>
+                      <option value="5">5 Videos</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700">License</label>
+                  <label className="text-sm font-medium text-gray-700">Lizenz</label>
                   <div className="mt-2">
                     <select
                       className="w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-950/20"
@@ -534,23 +562,23 @@ export default function NewBriefPage() {
             </div>
           </Section>
 
-          <Section title="Campaign Description" subtitle="Goals, deliverables, do’s & don’ts">
+          <Section title="Kampagnenbeschreibung" subtitle="Ziele, Deliverables, Do’s & Don’ts.">
             <label className="text-sm font-medium text-gray-700">
-              Description <span className="text-gray-400">(optional)</span>
+              Beschreibung <span className="text-gray-400">(optional)</span>
             </label>
             <div className="mt-2">
               <Textarea
                 className="min-h-[220px]"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Write a clear briefing: hooks, angles, deliverables, examples…"
+                placeholder="Beschreibe dein Briefing möglichst klar: Hooks, gewünschte Szenen, Produktvorteile, No-Gos, Beispiele..."
               />
             </div>
           </Section>
 
           <Section
-            title="Target Niches"
-            subtitle="Choose a niche group first, then pick up to 5 sub-niches."
+            title="Ziel-Nischen"
+            subtitle="Wähle zuerst eine Nischengruppe und danach bis zu 5 passende Unter-Nischen."
             right={
               <div className="flex items-center gap-3">
                 <span className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700">
@@ -561,13 +589,13 @@ export default function NewBriefPage() {
                   onClick={clearNiches}
                   className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-900 hover:bg-gray-50"
                 >
-                  Clear
+                  Zurücksetzen
                 </button>
               </div>
             }
           >
             <div>
-              <div className="text-xs font-semibold text-gray-600">Niche groups</div>
+              <div className="text-xs font-semibold text-gray-600">Nischengruppen</div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {groups.map((g) => {
                   const active = g === activeGroup;
@@ -592,9 +620,9 @@ export default function NewBriefPage() {
             <div className="mt-6 rounded-2xl border bg-white p-4">
               <div className="flex items-center justify-between gap-4">
                 <div className="text-xs font-semibold text-gray-600">
-                  {activeGroup} – Sub niches
+                  {activeGroup} – Unter-Nischen
                 </div>
-                <div className="text-xs text-gray-500">max 5</div>
+                <div className="text-xs text-gray-500">max. 5</div>
               </div>
 
               <div className="mt-3 flex flex-wrap gap-2">
@@ -615,7 +643,7 @@ export default function NewBriefPage() {
                           ? "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-400 opacity-60"
                           : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50"
                       }
-                      title={disabled ? "Max 5 selected" : undefined}
+                      title={disabled ? "Maximal 5 ausgewählt" : undefined}
                     >
                       {n}
                     </button>
@@ -625,7 +653,7 @@ export default function NewBriefPage() {
 
               {selectedNiches.length > 0 ? (
                 <div className="mt-5">
-                  <div className="text-xs font-semibold text-gray-600">Selected</div>
+                  <div className="text-xs font-semibold text-gray-600">Ausgewählt</div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {selectedNiches.map((n) => (
                       <button
@@ -633,7 +661,7 @@ export default function NewBriefPage() {
                         type="button"
                         onClick={() => toggleNiche(n)}
                         className="rounded-full bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white"
-                        title="Click to remove"
+                        title="Zum Entfernen klicken"
                       >
                         {n} ×
                       </button>
@@ -645,15 +673,15 @@ export default function NewBriefPage() {
           </Section>
 
           <Section
-            title="Upload Brief Files"
-            subtitle="Optional – you can upload now or later"
+            title="Briefing-Dateien hochladen"
+            subtitle="Optional – du kannst Dateien jetzt oder später ergänzen."
             right={
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50"
               >
-                Add files
+                Dateien hinzufügen
               </button>
             }
           >
@@ -667,11 +695,12 @@ export default function NewBriefPage() {
             />
 
             <div className="rounded-2xl border bg-white p-4">
-              <div className="text-xs font-semibold text-gray-600">Upload queue</div>
+              <div className="text-xs font-semibold text-gray-600">Upload-Warteschlange</div>
 
               {files.length === 0 ? (
                 <div className="mt-3 text-sm text-gray-500">
-                  No files selected. Click <span className="font-semibold">Add files</span>.
+                  Keine Dateien ausgewählt. Klicke auf{" "}
+                  <span className="font-semibold">Dateien hinzufügen</span>.
                 </div>
               ) : (
                 <div className="mt-3 space-y-2">
@@ -690,32 +719,75 @@ export default function NewBriefPage() {
                         onClick={() => removeFile(idx)}
                         className="rounded-full border px-3 py-1 text-xs font-semibold hover:bg-gray-50"
                       >
-                        Remove
+                        Entfernen
                       </button>
                     </div>
                   ))}
                 </div>
               )}
 
-              <p className="mt-3 text-xs text-gray-500">Max 10 files • up to 50MB each</p>
+              <p className="mt-3 text-xs text-gray-500">
+                Max. 10 Dateien • bis zu 50 MB pro Datei
+              </p>
             </div>
+          </Section>
+
+          <Section
+            title="Erstgespräch buchen"
+            subtitle="Bitte buche einen 30-minütigen Termin. Erst danach kann das Briefing eingereicht werden."
+          >
+            {!calUrl ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900">
+                Cal.com Link fehlt noch. Trage oben in der Datei bei{" "}
+                <span className="font-semibold">CAL_BOOKING_URL</span> deinen Termin-Link ein.
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-3xl border bg-white">
+                <iframe
+                  src={calUrl}
+                  className="h-[720px] w-full"
+                  title="Terminbuchung"
+                />
+              </div>
+            )}
+
+            <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl border bg-white p-4">
+              <input
+                type="checkbox"
+                checked={calendarConfirmed}
+                onChange={(e) => setCalendarConfirmed(e.target.checked)}
+                className="mt-1 h-4 w-4"
+              />
+              <span className="text-sm leading-6 text-gray-700">
+                Ich habe den 30-minütigen Termin für dieses Briefing gebucht.
+                Das Briefing kann erst danach eingereicht werden.
+              </span>
+            </label>
           </Section>
 
           <div className="sticky bottom-4 rounded-3xl border bg-white/95 p-4 shadow-sm backdrop-blur">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="text-sm text-gray-600">
-                {uploading ? "Uploading files…" : saving ? "Saving…" : "Ready"}
+                {uploading
+                  ? "Dateien werden hochgeladen..."
+                  : saving
+                  ? "Briefing wird gespeichert..."
+                  : calendarConfirmed
+                  ? "Bereit zum Einreichen"
+                  : "Bitte zuerst Termin buchen"}
               </div>
 
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={onSubmit}
-                  disabled={!canSubmit}
-                  className="rounded-full bg-emerald-950 px-8 py-3 text-sm font-semibold text-white shadow hover:opacity-95 disabled:opacity-50"
-                >
-                  {saving ? (uploading ? "Uploading…" : "Saving…") : "Submit Briefing"}
-                </button>
-              </div>
+              <button
+                onClick={onSubmit}
+                disabled={!canSubmit}
+                className="rounded-full bg-emerald-950 px-8 py-3 text-sm font-semibold text-white shadow hover:opacity-95 disabled:opacity-50"
+              >
+                {saving
+                  ? uploading
+                    ? "Upload läuft..."
+                    : "Speichern..."
+                  : "Briefing einreichen"}
+              </button>
             </div>
           </div>
         </div>
