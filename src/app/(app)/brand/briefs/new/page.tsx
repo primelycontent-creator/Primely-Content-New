@@ -218,8 +218,7 @@ export default function NewBriefPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const calUrl = useMemo(() => {
-    if (!CAL_BOOKING_URL || CAL_BOOKING_URL === "https://cal.com/primely-content-htyfnn/30min?overlayCalendar=true") {
-
+    if (!CAL_BOOKING_URL || CAL_BOOKING_URL === "https://cal.com/primely-content-htyfnn/30min") {
       return "";
     }
 
