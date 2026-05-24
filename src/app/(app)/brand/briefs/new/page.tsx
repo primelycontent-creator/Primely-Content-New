@@ -10,7 +10,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const CAL_BOOKING_URL = "DEIN_CAL_LINK_HIER";
+const CAL_BOOKING_URL = "https://www.primely-content.com/api/webhooks/cal";
 
 const LICENSE_OPTIONS = [
   "1 Monat",
@@ -218,7 +218,7 @@ export default function NewBriefPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const calUrl = useMemo(() => {
-    if (!CAL_BOOKING_URL || CAL_BOOKING_URL === "DEIN_CAL_LINK_HIER") {
+    if (!CAL_BOOKING_URL || CAL_BOOKING_URL === "https://www.primely-content.com/api/webhooks/cal") {
       return "";
     }
 
