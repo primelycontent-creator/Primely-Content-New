@@ -10,7 +10,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const CAL_BOOKING_URL = "https://www.primely-content.com/api/webhooks/cal";
+const CAL_BOOKING_URL = process.env.NEXT_PUBLIC_CAL_BOOKING_URL;
 
 const LICENSE_OPTIONS = [
   "1 Monat",
