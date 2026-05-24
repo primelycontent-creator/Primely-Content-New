@@ -10,7 +10,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const CAL_BOOKING_URL = process.env.NEXT_PUBLIC_CAL_BOOKING_URL;
+const CAL_BOOKING_URL = "https://cal.com/primely-content-htyfnn/30min"
 
 const LICENSE_OPTIONS = [
   "1 Monat",
