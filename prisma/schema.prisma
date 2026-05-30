@@ -81,6 +81,28 @@ enum LegalDocumentType {
   PRIVACY_POLICY
 }
 
+enum BrandCompanySize {
+  SIZE_1_10
+  SIZE_11_50
+  SIZE_51_250
+  SIZE_251_PLUS
+}
+
+enum BrandUgcExperience {
+  NONE
+  FIRST_CAMPAIGNS
+  REGULAR_CAMPAIGNS
+  PROFESSIONAL_TEAM
+}
+
+enum BrandMonthlyBudget {
+  UNDER_1000
+  BUDGET_1000_5000
+  BUDGET_5000_10000
+  BUDGET_10000_25000
+  BUDGET_25000_PLUS
+}
+
 model Notification {
   id        String           @id @default(cuid())
   userId    String
@@ -167,19 +189,34 @@ model BrandProfile {
   id     String @id @default(cuid())
   userId String @unique
 
-  companyName  String?
+  companyName String?
+  industry    String?
+
   contactName  String?
   contactEmail String?
   contactPhone String?
 
   websiteUrl   String?
-  billingEmail String?
+  instagramUrl String?
+  tiktokUrl    String?
+  linkedinUrl  String?
+
+  billingEmail       String?
+  billingCompanyName String?
+  vatId              String?
 
   addressLine1 String?
   addressLine2 String?
   city         String?
   postalCode   String?
   country      String?
+
+  companySize   BrandCompanySize?
+  ugcExperience BrandUgcExperience?
+  monthlyBudget BrandMonthlyBudget?
+
+  contractContactName String?
+  contractContactRole String?
 
   logoAssetId String? @unique
   logoAsset   Asset?  @relation("BrandLogo", fields: [logoAssetId], references: [id], onDelete: SetNull)
@@ -192,6 +229,10 @@ model BrandProfile {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([logoAssetId])
+  @@index([industry])
+  @@index([companySize])
+  @@index([ugcExperience])
+  @@index([monthlyBudget])
 }
 
 model CreatorProfile {
