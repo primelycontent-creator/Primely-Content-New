@@ -19,7 +19,9 @@ async function getAuthedCreator(req: Request) {
   if (!token) return { error: "Missing bearer token", status: 401 as const };
 
   const { data: userData, error: userErr } = await supabaseAdmin.auth.getUser(token);
-  if (userErr || !userData?.user?.email) return { error: "Invalid token", status: 401 as const };
+  if (userErr || !userData?.user?.email) {
+    return { error: "Invalid token", status: 401 as const };
+  }
 
   const email = userData.user.email.toLowerCase();
 
@@ -58,61 +60,47 @@ function mapWorkMode(input: any): CreatorWorkMode | null {
   return null;
 }
 
-// ✅ GET profile
+const assetSelect = {
+  id: true,
+  bucket: true,
+  path: true,
+  fileName: true,
+  mimeType: true,
+  sizeBytes: true,
+  createdAt: true,
+};
+
 export async function GET(req: Request) {
   try {
     const auth = await getAuthedCreator(req);
-    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
 
     const profile = await prisma.creatorProfile.findUnique({
       where: { userId: auth.userId },
       include: {
-        introVideoAsset: {
-          select: { id: true, bucket: true, path: true, fileName: true, mimeType: true, sizeBytes: true, createdAt: true },
-        },
+        introVideoAsset: { select: assetSelect },
+        profileImageAsset: { select: assetSelect },
       },
     });
 
-    return NextResponse.json({
-      ok: true,
-      profile: profile ?? null,
-    });
+    return NextResponse.json({ ok: true, profile: profile ?? null });
   } catch (e: any) {
     console.error("api/creator/profile GET error:", e);
     return NextResponse.json({ error: e?.message ?? "Server error" }, { status: 500 });
   }
 }
 
-// ✅ PATCH create/update profile
 export async function PATCH(req: Request) {
   try {
     const auth = await getAuthedCreator(req);
-    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
 
     const body = await req.json();
 
-    const fullName = safeStr(body?.fullName);
-    const phone = safeStr(body?.phone);
-
-    const addressLine1 = safeStr(body?.addressLine1);
-    const addressLine2 = safeStr(body?.addressLine2);
-    const city = safeStr(body?.city);
-    const postalCode = safeStr(body?.postalCode);
-    const country = safeStr(body?.country);
-
-    const workMode = mapWorkMode(body?.workMode);
-    const nicheGroup = safeStr(body?.nicheGroup);
-    const niches = safeStrArr(body?.niches, 10);
-
-    const portfolioUrl = safeStr(body?.portfolioUrl);
-    const bio = safeStr(body?.bio);
-
-    const instagram = safeStr(body?.instagram);
-    const tiktok = safeStr(body?.tiktok);
-
-    const equipment = safeStrArr(body?.equipment, 30);
-
-    // UI sendet "price30s" als EUR (z.B. 150) -> wir speichern cents
     const price30sEur = body?.price30sEur;
     const price30sCents =
       price30sEur == null || price30sEur === ""
@@ -122,46 +110,45 @@ export async function PATCH(req: Request) {
     const updated = await prisma.creatorProfile.upsert({
       where: { userId: auth.userId },
       update: {
-        fullName,
-        phone,
-        addressLine1,
-        addressLine2,
-        city,
-        postalCode,
-        country,
-        workMode,
-        nicheGroup,
-        niches,
-        portfolioUrl,
-        bio,
-        instagram,
-        tiktok,
-        equipment,
+        fullName: safeStr(body?.fullName),
+        phone: safeStr(body?.phone),
+        addressLine1: safeStr(body?.addressLine1),
+        addressLine2: safeStr(body?.addressLine2),
+        city: safeStr(body?.city),
+        postalCode: safeStr(body?.postalCode),
+        country: safeStr(body?.country),
+        workMode: mapWorkMode(body?.workMode),
+        nicheGroup: safeStr(body?.nicheGroup),
+        niches: safeStrArr(body?.niches, 10),
+        portfolioUrl: safeStr(body?.portfolioUrl),
+        bio: safeStr(body?.bio),
+        instagram: safeStr(body?.instagram),
+        tiktok: safeStr(body?.tiktok),
+        equipment: safeStrArr(body?.equipment, 30),
         price30sCents,
       },
       create: {
         userId: auth.userId,
-        fullName,
-        phone,
-        addressLine1,
-        addressLine2,
-        city,
-        postalCode,
-        country,
-        workMode,
-        nicheGroup,
-        niches,
-        portfolioUrl,
-        bio,
-        instagram,
-        tiktok,
-        equipment,
+        fullName: safeStr(body?.fullName),
+        phone: safeStr(body?.phone),
+        addressLine1: safeStr(body?.addressLine1),
+        addressLine2: safeStr(body?.addressLine2),
+        city: safeStr(body?.city),
+        postalCode: safeStr(body?.postalCode),
+        country: safeStr(body?.country),
+        workMode: mapWorkMode(body?.workMode),
+        nicheGroup: safeStr(body?.nicheGroup),
+        niches: safeStrArr(body?.niches, 10),
+        portfolioUrl: safeStr(body?.portfolioUrl),
+        bio: safeStr(body?.bio),
+        instagram: safeStr(body?.instagram),
+        tiktok: safeStr(body?.tiktok),
+        equipment: safeStrArr(body?.equipment, 30),
         price30sCents,
       },
       include: {
-        introVideoAsset: {
-          select: { id: true, bucket: true, path: true, fileName: true, mimeType: true, sizeBytes: true, createdAt: true },
-        },
+        introVideoAsset: { select: assetSelect },
+        profileImageAsset: { select: assetSelect },
       },
     });
 
