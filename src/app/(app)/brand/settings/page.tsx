@@ -472,15 +472,15 @@ export default function BrandSettingsPage() {
                   Support öffnen
                 </Link>
 
-                <Link href="/privacy" className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50">
+                <Link href="/legal/privacy" className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50">
                   Datenschutz
                 </Link>
 
-                <Link href="/terms" className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50">
+                <Link href="/legal/terms" className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50">
                   Nutzungsbedingungen
                 </Link>
 
-                <Link href="/agb" className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50">
+                <Link href="/legal/agb" className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50">
                   AGB
                 </Link>
               </div>
