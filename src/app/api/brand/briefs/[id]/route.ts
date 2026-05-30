@@ -34,7 +34,12 @@ function mapLicenseTerm(input: any): LicenseTerm | null {
   return null;
 }
 
-function assertPathMatchesStructure(args: { brandId: string; briefId: string; bucket: string; path: string }) {
+function assertPathMatchesStructure(args: {
+  brandId: string;
+  briefId: string;
+  bucket: string;
+  path: string;
+}) {
   const { brandId, briefId, bucket, path } = args;
 
   if (bucket !== UGC_BUCKET) return `Invalid bucket. Expected "${UGC_BUCKET}".`;
@@ -54,7 +59,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   }
 
   const { id: briefId } = await ctx.params;
-  if (!briefId) return NextResponse.json({ error: "Missing brief id" }, { status: 400 });
+  if (!briefId) {
+    return NextResponse.json({ error: "Missing brief id" }, { status: 400 });
+  }
 
   const brief = await prisma.brief.findFirst({
     where: { id: briefId, brandId: auth.userId },
@@ -69,17 +76,31 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
       licenseTerm: true,
       nicheGroup: true,
       niches: true,
+      deliverableCount: true,
 
       companyName: true,
       contactName: true,
       contactEmail: true,
       contactPhone: true,
 
+      consultationRequired: true,
+      consultationBooked: true,
+      consultationBookedAt: true,
+      consultationEventType: true,
+      consultationBookingUid: true,
+      consultationBookingUrl: true,
+      consultationAttendeeName: true,
+      consultationAttendeeEmail: true,
+
       brand: {
         select: {
           id: true,
           email: true,
-          brandProfile: { select: { companyName: true } },
+          brandProfile: {
+            select: {
+              companyName: true,
+            },
+          },
         },
       },
 
@@ -87,7 +108,21 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
         select: {
           id: true,
           email: true,
-          creatorProfile: { select: { fullName: true } },
+          creatorProfile: {
+            select: {
+              fullName: true,
+              nicheGroup: true,
+              niches: true,
+              profileImageAsset: {
+                select: {
+                  id: true,
+                  bucket: true,
+                  path: true,
+                  fileName: true,
+                },
+              },
+            },
+          },
         },
       },
 
@@ -122,6 +157,50 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
           createdAt: true,
         },
       },
+
+      supportTickets: {
+        orderBy: { updatedAt: "desc" },
+        select: {
+          id: true,
+          subject: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+            select: {
+              messages: true,
+            },
+          },
+        },
+      },
+
+      calendarBookings: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          calBookingId: true,
+          calUid: true,
+          triggerEvent: true,
+          eventTitle: true,
+          bookingType: true,
+          attendeeName: true,
+          attendeeEmail: true,
+          startTime: true,
+          endTime: true,
+          videoCallUrl: true,
+          status: true,
+          createdAt: true,
+        },
+      },
+
+      _count: {
+        select: {
+          assets: true,
+          deliverables: true,
+          supportTickets: true,
+          calendarBookings: true,
+        },
+      },
     },
   });
 
@@ -130,6 +209,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   }
 
   return NextResponse.json({
+    ok: true,
     brief: {
       ...brief,
       assets: (brief.assets ?? []).map((x) => x.asset),
@@ -144,18 +224,25 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   }
 
   const { id: briefId } = await ctx.params;
-  if (!briefId) return NextResponse.json({ error: "Missing brief id" }, { status: 400 });
+  if (!briefId) {
+    return NextResponse.json({ error: "Missing brief id" }, { status: 400 });
+  }
 
   const exists = await prisma.brief.findFirst({
     where: { id: briefId, brandId: auth.userId },
     select: { id: true },
   });
-  if (!exists) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  if (!exists) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   const body = await req.json().catch(() => ({}));
 
   const title = safeStr(body?.title);
-  if (!title) return NextResponse.json({ error: "Missing title" }, { status: 400 });
+  if (!title) {
+    return NextResponse.json({ error: "Missing title" }, { status: 400 });
+  }
 
   const updated = await prisma.brief.update({
     where: { id: briefId },
@@ -173,10 +260,17 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       contactEmail: safeStr(body?.contactEmail),
       contactPhone: safeStr(body?.contactPhone),
     },
-    select: { id: true, updatedAt: true },
+    select: {
+      id: true,
+      updatedAt: true,
+    },
   });
 
-  return NextResponse.json({ ok: true, briefId: updated.id, updatedAt: updated.updatedAt });
+  return NextResponse.json({
+    ok: true,
+    briefId: updated.id,
+    updatedAt: updated.updatedAt,
+  });
 }
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -187,13 +281,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     }
 
     const { id: briefId } = await ctx.params;
-    if (!briefId) return NextResponse.json({ error: "Missing brief id" }, { status: 400 });
+    if (!briefId) {
+      return NextResponse.json({ error: "Missing brief id" }, { status: 400 });
+    }
 
     const brief = await prisma.brief.findFirst({
       where: { id: briefId, brandId: auth.userId },
       select: { id: true, title: true },
     });
-    if (!brief) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    if (!brief) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
 
     const body = await req.json().catch(() => ({}));
 
@@ -208,13 +307,25 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         ? Math.floor(sizeBytesRaw)
         : null;
 
-    if (!path) return NextResponse.json({ error: "Missing path" }, { status: 400 });
+    if (!path) {
+      return NextResponse.json({ error: "Missing path" }, { status: 400 });
+    }
 
-    const pathErr = assertPathMatchesStructure({ brandId: auth.userId, briefId, bucket, path });
-    if (pathErr) return NextResponse.json({ error: pathErr }, { status: 400 });
+    const pathErr = assertPathMatchesStructure({
+      brandId: auth.userId,
+      briefId,
+      bucket,
+      path,
+    });
+
+    if (pathErr) {
+      return NextResponse.json({ error: pathErr }, { status: 400 });
+    }
 
     const asset = await prisma.asset.upsert({
-      where: { bucket_path: { bucket, path } },
+      where: {
+        bucket_path: { bucket, path },
+      },
       update: {
         fileName: fileName ?? undefined,
         mimeType: mimeType ?? undefined,
@@ -241,9 +352,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     });
 
     await prisma.briefAsset.upsert({
-      where: { briefId_assetId: { briefId, assetId: asset.id } },
+      where: {
+        briefId_assetId: { briefId, assetId: asset.id },
+      },
       update: {},
-      create: { briefId, assetId: asset.id },
+      create: {
+        briefId,
+        assetId: asset.id,
+      },
     });
 
     const staffUsers = await prisma.user.findMany({
@@ -256,8 +372,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         data: staffUsers.map((u) => ({
           userId: u.id,
           type: NotificationType.NEW_BRIEF,
-          title: "Brand uploaded brief assets",
-          message: `New files were uploaded to briefing "${brief.title}".`,
+          title: "Brand uploaded campaign assets",
+          message: `New files were uploaded to campaign "${brief.title}".`,
           link: `/staff/briefs/${brief.id}`,
         })),
       });
