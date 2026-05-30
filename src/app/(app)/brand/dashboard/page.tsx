@@ -44,7 +44,15 @@ type MeUser = {
   brandProfile?: {
     companyName?: string | null;
     contactName?: string | null;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
     billingEmail?: string | null;
+    billingCompanyName?: string | null;
+    vatId?: string | null;
+    addressLine1?: string | null;
+    city?: string | null;
+    postalCode?: string | null;
+    country?: string | null;
   } | null;
 };
 
@@ -66,18 +74,6 @@ function formatDate(value: string | null | undefined) {
     month: "2-digit",
     year: "numeric",
   });
-}
-
-function statusLabel(status: BriefStatus) {
-  const s = String(status).toUpperCase();
-  if (s === "DRAFT") return "Entwurf";
-  if (s === "SUBMITTED") return "Eingereicht";
-  if (s === "REVIEW") return "In Review";
-  if (s === "IN_PROGRESS") return "Laufend";
-  if (s === "DONE") return "Abgeschlossen";
-  if (s === "APPROVED") return "Freigegeben";
-  if (s === "DECLINED") return "Abgelehnt";
-  return status.replaceAll("_", " ");
 }
 
 function consultationLabel(b: BriefListItem) {
@@ -113,8 +109,21 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-function Icon(props: { name: "grid" | "file" | "eye" | "check" | "user" | "bank" | "bell" | "support" | "calendar" | "chevron" }) {
+function Icon(props: {
+  name:
+    | "grid"
+    | "file"
+    | "eye"
+    | "check"
+    | "user"
+    | "bank"
+    | "bell"
+    | "support"
+    | "calendar"
+    | "chevron";
+}) {
   const common = "h-5 w-5";
+
   if (props.name === "grid") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -125,6 +134,7 @@ function Icon(props: { name: "grid" | "file" | "eye" | "check" | "user" | "bank"
       </svg>
     );
   }
+
   if (props.name === "file") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -134,6 +144,7 @@ function Icon(props: { name: "grid" | "file" | "eye" | "check" | "user" | "bank"
       </svg>
     );
   }
+
   if (props.name === "eye") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -142,6 +153,7 @@ function Icon(props: { name: "grid" | "file" | "eye" | "check" | "user" | "bank"
       </svg>
     );
   }
+
   if (props.name === "check") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -149,6 +161,7 @@ function Icon(props: { name: "grid" | "file" | "eye" | "check" | "user" | "bank"
       </svg>
     );
   }
+
   if (props.name === "user") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -157,6 +170,7 @@ function Icon(props: { name: "grid" | "file" | "eye" | "check" | "user" | "bank"
       </svg>
     );
   }
+
   if (props.name === "bank") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -165,6 +179,7 @@ function Icon(props: { name: "grid" | "file" | "eye" | "check" | "user" | "bank"
       </svg>
     );
   }
+
   if (props.name === "bell") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -173,6 +188,7 @@ function Icon(props: { name: "grid" | "file" | "eye" | "check" | "user" | "bank"
       </svg>
     );
   }
+
   if (props.name === "support") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -182,6 +198,7 @@ function Icon(props: { name: "grid" | "file" | "eye" | "check" | "user" | "bank"
       </svg>
     );
   }
+
   if (props.name === "calendar") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -190,6 +207,7 @@ function Icon(props: { name: "grid" | "file" | "eye" | "check" | "user" | "bank"
       </svg>
     );
   }
+
   return (
     <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="m9 18 6-6-6-6" />
@@ -209,9 +227,12 @@ function StatCard(props: {
       <div className="flex items-center justify-between gap-5">
         <div>
           <div className="text-sm font-medium text-gray-700">{props.label}</div>
-          <div className="mt-5 text-4xl font-semibold tracking-tight text-gray-950">{props.value}</div>
+          <div className="mt-5 text-4xl font-semibold tracking-tight text-gray-950">
+            {props.value}
+          </div>
           <div className="mt-3 text-sm text-gray-500">{props.hint}</div>
         </div>
+
         <div
           className={
             props.dark
@@ -227,20 +248,36 @@ function StatCard(props: {
 }
 
 function TaskRow(props: {
-  icon: "user" | "bank" | "bell";
+  icon: "user" | "bank" | "bell" | "check";
   title: string;
   subtitle: string;
   href: string;
+  done: boolean;
 }) {
   return (
     <Link href={props.href} className="group flex items-center gap-4 border-b py-6 last:border-b-0">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#f3eee7] text-gray-950">
-        <Icon name={props.icon} />
+      <div
+        className={
+          props.done
+            ? "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-800"
+            : "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#f3eee7] text-gray-950"
+        }
+      >
+        {props.done ? <Icon name="check" /> : <Icon name={props.icon} />}
       </div>
+
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-semibold text-gray-950">{props.title}</div>
+        <div className="flex items-center gap-2">
+          <div className="text-sm font-semibold text-gray-950">{props.title}</div>
+          {props.done ? (
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">
+              Erledigt
+            </span>
+          ) : null}
+        </div>
         <div className="mt-1 text-xs leading-5 text-gray-500">{props.subtitle}</div>
       </div>
+
       <div className="text-gray-950 transition group-hover:translate-x-1">
         <Icon name="chevron" />
       </div>
@@ -254,6 +291,7 @@ export default function BrandDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<BriefListItem[]>([]);
   const [user, setUser] = useState<MeUser | null>(null);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -268,12 +306,16 @@ export default function BrandDashboardPage() {
       return;
     }
 
-    const [briefsRes, meRes] = await Promise.all([
+    const [briefsRes, meRes, settingsRes] = await Promise.all([
       fetch("/api/brand/briefs", {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       }),
       fetch("/api/me", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      }),
+      fetch("/api/settings", {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       }),
@@ -294,6 +336,7 @@ export default function BrandDashboardPage() {
       setUser(((meData.json as any)?.user ?? null) as MeUser | null);
     }
 
+    setSettingsLoaded(settingsRes.ok);
     setLoading(false);
   }
 
@@ -311,20 +354,45 @@ export default function BrandDashboardPage() {
       ["SUBMITTED", "REVIEW"].includes(String(x.status).toUpperCase())
     ).length;
 
-    const done = items.filter((x) =>
-      ["DONE"].includes(String(x.status).toUpperCase())
-    ).length;
+    const done = items.filter((x) => ["DONE"].includes(String(x.status).toUpperCase())).length;
 
-    const waitingCall = items.filter((x) => !x.consultationBooked && String(x.status).toUpperCase() !== "DRAFT").length;
+    const waitingCall = items.filter(
+      (x) => !x.consultationBooked && String(x.status).toUpperCase() !== "DRAFT"
+    ).length;
 
     return { running, review, done, waitingCall };
   }, [items]);
 
-  const recentBriefings = useMemo(() => {
+  const recentCampaigns = useMemo(() => {
     return [...items]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 2);
   }, [items]);
+
+  const taskState = useMemo(() => {
+    const p = user?.brandProfile;
+
+    const profileDone = Boolean(
+      p?.companyName?.trim() &&
+        p?.contactName?.trim() &&
+        (p?.contactEmail?.trim() || user?.email)
+    );
+
+    const businessDone = Boolean(
+      p?.billingEmail?.trim() ||
+        p?.billingCompanyName?.trim() ||
+        (p?.addressLine1?.trim() && p?.city?.trim() && p?.postalCode?.trim())
+    );
+
+    const firstCampaignDone = items.length > 0;
+
+    return {
+      profileDone,
+      businessDone,
+      settingsDone: settingsLoaded,
+      firstCampaignDone,
+    };
+  }, [user, items.length, settingsLoaded]);
 
   const welcomeName = getBrandWelcomeName(user);
   const displayName = welcomeName || "Brand";
@@ -343,7 +411,7 @@ export default function BrandDashboardPage() {
                 href="/brand/briefs/new"
                 className="hidden rounded-full bg-gray-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90 sm:inline-flex"
               >
-                Neues Briefing
+                Neue Kampagne
               </Link>
 
               <Link
@@ -369,7 +437,7 @@ export default function BrandDashboardPage() {
                   Willkommen zurück, {displayName} 👋
                 </h1>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-500">
-                  Hier findest du den aktuellen Überblick über deine Briefings, offene Aufgaben und nächste Schritte.
+                  Hier findest du den aktuellen Überblick über deine Kampagnen, offene Aufgaben und nächste Schritte.
                 </p>
               </div>
 
@@ -377,7 +445,7 @@ export default function BrandDashboardPage() {
                 href="/brand/briefs/new"
                 className="inline-flex w-fit rounded-full bg-gray-950 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-90 sm:hidden"
               >
-                Neues Briefing
+                Neue Kampagne
               </Link>
             </div>
 
@@ -389,14 +457,14 @@ export default function BrandDashboardPage() {
 
             <div className="mt-10 grid gap-5 md:grid-cols-3">
               <StatCard
-                label="Laufende Briefings"
+                label="Laufende Kampagnen"
                 value={loading ? 0 : stats.running}
                 hint={stats.waitingCall > 0 ? `${stats.waitingCall} Erstgespräch ausstehend` : "Aktuell in Bearbeitung"}
                 icon="file"
                 dark
               />
               <StatCard
-                label="In Review"
+                label="In Prüfung"
                 value={loading ? 0 : stats.review}
                 hint="Prüfung durch unser Team"
                 icon="eye"
@@ -413,7 +481,7 @@ export default function BrandDashboardPage() {
               <section className="rounded-[28px] border bg-white p-5 shadow-sm sm:p-7">
                 <div className="flex items-center justify-between gap-4">
                   <h2 className="text-lg font-semibold tracking-tight text-gray-950">
-                    Letzte erstellte Briefings
+                    Letzte erstellte Kampagnen
                   </h2>
                   <Link href="/brand/briefs" className="text-xs font-semibold text-gray-950 hover:underline">
                     Alle anzeigen
@@ -421,23 +489,23 @@ export default function BrandDashboardPage() {
                 </div>
 
                 {loading ? (
-                  <div className="mt-8 text-sm text-gray-500">Briefings werden geladen...</div>
-                ) : recentBriefings.length === 0 ? (
+                  <div className="mt-8 text-sm text-gray-500">Kampagnen werden geladen...</div>
+                ) : recentCampaigns.length === 0 ? (
                   <div className="mt-8 rounded-3xl border border-dashed bg-[#fbfaf7] p-8 text-center">
-                    <div className="text-base font-semibold text-gray-950">Noch keine Briefings</div>
+                    <div className="text-base font-semibold text-gray-950">Noch keine Kampagnen</div>
                     <p className="mt-2 text-sm leading-6 text-gray-500">
-                      Starte dein erstes Briefing und buche direkt dein Erstgespräch.
+                      Starte deine erste Kampagne und buche direkt dein Erstgespräch.
                     </p>
                     <Link
                       href="/brand/briefs/new"
                       className="mt-5 inline-flex rounded-full bg-gray-950 px-5 py-2.5 text-sm font-semibold text-white"
                     >
-                      Briefing erstellen
+                      Kampagne erstellen
                     </Link>
                   </div>
                 ) : (
                   <div className="mt-6 divide-y">
-                    {recentBriefings.map((b) => (
+                    {recentCampaigns.map((b) => (
                       <Link
                         key={b.id}
                         href={`/brand/briefs/${b.id}`}
@@ -481,7 +549,7 @@ export default function BrandDashboardPage() {
                   href="/brand/briefs"
                   className="mt-5 flex items-center justify-center gap-2 rounded-2xl border bg-white px-5 py-4 text-sm font-semibold text-gray-950 hover:bg-gray-50"
                 >
-                  Alle Briefings anzeigen
+                  Alle Kampagnen anzeigen
                   <Icon name="chevron" />
                 </Link>
               </section>
@@ -493,20 +561,30 @@ export default function BrandDashboardPage() {
                   <TaskRow
                     icon="user"
                     title="Profil vervollständigen"
-                    subtitle="Erhöhe die Qualität deiner Briefing-Anfragen."
+                    subtitle="Erhöhe die Qualität deiner Kampagnen-Anfragen."
                     href="/brand/profile"
+                    done={taskState.profileDone}
                   />
                   <TaskRow
                     icon="bank"
                     title="Unternehmensdaten prüfen"
                     subtitle="Halte Rechnungs- und Kontaktdaten aktuell."
                     href="/brand/profile"
+                    done={taskState.businessDone}
                   />
                   <TaskRow
                     icon="bell"
                     title="Benachrichtigungen verwalten"
-                    subtitle="Verpasse keine Updates zu deinen Briefings."
+                    subtitle="Verpasse keine Updates zu deinen Kampagnen."
                     href="/brand/settings"
+                    done={taskState.settingsDone}
+                  />
+                  <TaskRow
+                    icon="check"
+                    title="Erste Kampagne erstellen"
+                    subtitle="Starte deinen ersten UGC-Auftrag über die Plattform."
+                    href="/brand/briefs/new"
+                    done={taskState.firstCampaignDone}
                   />
                 </div>
               </section>
