@@ -38,7 +38,7 @@ const navItems = [
     icon: User,
   },
   {
-    href: "/settings",
+    href: "/brand/settings",
     label: "Einstellungen",
     icon: Settings,
   },
