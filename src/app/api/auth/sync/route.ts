@@ -1,174 +1,118 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { createClient } from "@supabase/supabase-js";
+import { UserRole } from "@prisma/client";
 
-type Role = "BRAND" | "CREATOR" | "STAFF";
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+);
 
-function safeString(value: unknown) {
-  const s = String(value ?? "").trim();
-  return s.length > 0 ? s : null;
+function getToken(req: Request) {
+  const auth = req.headers.get("authorization") || "";
+  return auth.startsWith("Bearer ") ? auth.slice(7) : null;
+}
+
+function safeStr(v: any) {
+  const s = String(v ?? "").trim();
+  return s.length ? s : null;
+}
+
+function mapRole(v: any): UserRole {
+  const role = String(v ?? "").toUpperCase();
+  if (role === "CREATOR") return UserRole.CREATOR;
+  if (role === "STAFF") return UserRole.STAFF;
+  return UserRole.BRAND;
 }
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as {
-      id?: string;
-      email?: string;
-      role?: Role;
-      companyName?: string | null;
-      contactPerson?: string | null;
-      phone?: string | null;
-      displayName?: string | null;
-
-      acceptedTerms?: boolean;
-      acceptedPrivacy?: boolean;
-      acceptedAgb?: boolean;
-      termsVersion?: string | null;
-      privacyVersion?: string | null;
-      agbVersion?: string | null;
-    };
-
-    const id = String(body.id ?? "").trim();
-    const email = String(body.email ?? "").trim().toLowerCase();
-    const role = String(body.role ?? "").trim().toUpperCase() as Role;
-
-    if (!id || !email || !role) {
-      return NextResponse.json(
-        { error: "Missing id/email/role" },
-        { status: 400 }
-      );
+    const token = getToken(req);
+    if (!token) {
+      return NextResponse.json({ error: "Missing bearer token" }, { status: 401 });
     }
 
-    if (!["BRAND", "CREATOR", "STAFF"].includes(role)) {
-      return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+    const { data, error } = await supabaseAdmin.auth.getUser(token);
+
+    if (error || !data?.user?.email) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    const companyName = safeString(body.companyName);
-    const contactPerson = safeString(body.contactPerson);
-    const phone = safeString(body.phone);
-    const displayName = safeString(body.displayName);
+    const supaUser = data.user!;
+    const email = supaUser.email!.toLowerCase();
+    const meta = supaUser.user_metadata ?? {};
+    const role = mapRole(meta.role);
 
-    const acceptedTerms = body.acceptedTerms === true;
-    const acceptedPrivacy = body.acceptedPrivacy === true;
-    const acceptedAgb = body.acceptedAgb === true;
-
-    const termsVersion = safeString(body.termsVersion);
-    const privacyVersion = safeString(body.privacyVersion);
-    const agbVersion = safeString(body.agbVersion);
-
-    const now = new Date();
-
-    const legalData =
-      acceptedTerms &&
-      acceptedPrivacy &&
-      acceptedAgb &&
-      termsVersion &&
-      privacyVersion &&
-      agbVersion
-        ? {
-            termsAcceptedAt: now,
-            privacyAcceptedAt: now,
-            termsVersion: `${termsVersion}|${agbVersion}`,
-            privacyVersion,
-          }
-        : {};
-
-    const existingById = await prisma.user.findUnique({
-      where: { id },
-      select: { id: true, email: true, role: true },
-    });
-
-    const existingByEmail = await prisma.user.findUnique({
+    const user = await prisma.user.upsert({
       where: { email },
-      select: { id: true, email: true, role: true },
+      update: {
+        emailConfirmedAt: supaUser.email_confirmed_at
+          ? new Date(supaUser.email_confirmed_at)
+          : undefined,
+      },
+      create: {
+        email,
+        role,
+        emailConfirmedAt: supaUser.email_confirmed_at
+          ? new Date(supaUser.email_confirmed_at)
+          : null,
+        termsAcceptedAt: meta.acceptedTerms ? new Date() : null,
+        privacyAcceptedAt: meta.acceptedPrivacy ? new Date() : null,
+        agbAcceptedAt: meta.acceptedTerms ? new Date() : null,
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+      },
     });
 
-    let userId = id;
-    let finalRole: Role = role;
-
-    if (existingById) {
-      const updated = await prisma.user.update({
-        where: { id },
-        data: {
-          email,
-          role,
-          ...legalData,
-        },
-        select: { id: true, role: true },
-      });
-
-      userId = updated.id;
-      finalRole = updated.role;
-    } else if (existingByEmail) {
-      const updated = await prisma.user.update({
-        where: { email },
-        data: {
-          role,
-          ...legalData,
-        },
-        select: { id: true, role: true },
-      });
-
-      userId = updated.id;
-      finalRole = updated.role;
-    } else {
-      const created = await prisma.user.create({
-        data: {
-          id,
-          email,
-          role,
-          ...legalData,
-        },
-        select: { id: true, role: true },
-      });
-
-      userId = created.id;
-      finalRole = created.role;
-    }
-
-    if (finalRole === "BRAND") {
+    if (role === UserRole.BRAND) {
       await prisma.brandProfile.upsert({
-        where: { userId },
+        where: { userId: user.id },
         update: {
-          companyName: companyName ?? undefined,
-          contactName: contactPerson ?? undefined,
+          companyName: safeStr(meta.companyName),
+          contactName: safeStr(meta.contactPerson),
           contactEmail: email,
-          contactPhone: phone ?? undefined,
+          contactPhone: safeStr(meta.phone),
+          websiteUrl: safeStr(meta.website),
         },
         create: {
-          userId,
-          companyName,
-          contactName: contactPerson,
+          userId: user.id,
+          companyName: safeStr(meta.companyName),
+          contactName: safeStr(meta.contactPerson),
           contactEmail: email,
-          contactPhone: phone,
+          contactPhone: safeStr(meta.phone),
+          websiteUrl: safeStr(meta.website),
         },
       });
     }
 
-    if (finalRole === "CREATOR") {
+    if (role === UserRole.CREATOR) {
       await prisma.creatorProfile.upsert({
-        where: { userId },
+        where: { userId: user.id },
         update: {
-          fullName: displayName ?? undefined,
-          phone: phone ?? undefined,
+          fullName: safeStr(meta.fullName),
+          phone: safeStr(meta.phone),
         },
         create: {
-          userId,
-          fullName: displayName,
-          phone,
+          userId: user.id,
+          fullName: safeStr(meta.fullName),
+          phone: safeStr(meta.phone),
         },
       });
     }
 
-    return NextResponse.json({
-      ok: true,
-      userId,
-      role: finalRole,
+    await prisma.userSettings.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: { userId: user.id },
     });
+
+    return NextResponse.json({ ok: true, user });
   } catch (e: any) {
-    console.error("api/auth/sync POST error:", e);
-    return NextResponse.json(
-      { error: e?.message ?? "Server error" },
-      { status: 500 }
-    );
+    console.error("POST /api/auth/sync error:", e);
+    return NextResponse.json({ error: e?.message ?? "Server error" }, { status: 500 });
   }
 }
