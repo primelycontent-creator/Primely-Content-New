@@ -1,106 +1,72 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import {
+  Calendar,
+  CheckCircle,
+  Clock,
+  FileText,
+  Image as ImageIcon,
+  LifeBuoy,
+  Megaphone,
+  PackageCheck,
+} from "lucide-react";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const LICENSE_OPTIONS = [
-  "1 Month",
-  "3 Months",
-  "6 Months",
-  "12 Months",
-  "Unlimited",
-] as const;
+type CreatorProfileSafe = {
+  nicheGroup?: string | null;
+  niches?: string[];
+  equipment?: string[];
+  profileImageAsset?: {
+    bucket: string;
+    path: string;
+    fileName?: string | null;
+  } | null;
+};
 
-type LicenseLabel = (typeof LICENSE_OPTIONS)[number];
+type CampaignDetail = {
+  id: string;
+  title: string;
+  description?: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  deadline?: string | null;
+  licenseTerm?: string | null;
+  nicheGroup?: string | null;
+  niches?: string[];
+  deliverableCount?: number;
 
-const NICHE_GROUPS = {
-  "Beauty & Skincare": ["Hautpflege", "Make-up", "Anti-Aging", "Naturkosmetik"],
-  "Fitness & Gesundheit": [
-    "Supplements",
-    "Home Workouts",
-    "Fitness-Programme",
-    "Abnehmprodukte",
-    "Biohacking",
-  ],
-  Fashion: ["Streetwear", "Sportbekleidung", "Schmuck", "Taschen", "Sneaker"],
-  "Tech & Gadgets": [
-    "Smartphones & Zubehör",
-    "Gimbals",
-    "Kameras",
-    "Smartwatches",
-    "KI-Tools & Apps",
-  ],
-  "Home & Living": [
-    "Einrichtung",
-    "Küchengadgets",
-    "Haushaltshelfer",
-    "DIY-Produkte",
-    "Dekoration",
-  ],
-  "Food & Getränke": [
-    "Proteinprodukte",
-    "Kaffee-Marken",
-    "Energy Drinks",
-    "Süßigkeiten",
-    "Kochboxen",
-  ],
-  "Persönlichkeitsentwicklung & Coaching": [
-    "Online-Kurse",
-    "Trading",
-    "Mindset",
-    "Dating-Coaching",
-    "Business-Coaching",
-  ],
-  "Finanzen & Versicherungen": [
-    "Investment-Apps",
-    "Kryptowährungen",
-    "Versicherungen",
-    "Kreditkarten",
-  ],
-  Haustiere: ["Hundefutter", "Katzenzubehör", "Spielzeug", "Pflegeprodukte"],
-  "Reisen & Lifestyle": [
-    "Reisegadgets",
-    "Hotels",
-    "Koffer",
-    "Camper",
-    "Auslandsversicherungen",
-  ],
-} as const;
-
-type NicheGroup = keyof typeof NICHE_GROUPS;
-
-type BrandProfile = {
   companyName?: string | null;
   contactName?: string | null;
   contactEmail?: string | null;
   contactPhone?: string | null;
+
+  consultationRequired?: boolean | null;
+  consultationBooked?: boolean | null;
+  consultationBookedAt?: string | null;
+  consultationBookingUrl?: string | null;
+
+  assignedCreator?: {
+    id: string;
+    creatorProfile?: CreatorProfileSafe | null;
+  } | null;
+
+  _count?: {
+    assets?: number;
+    deliverables?: number;
+    supportTickets?: number;
+    calendarBookings?: number;
+  };
 };
-
-function safeFileName(name: string) {
-  return name
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-zA-Z0-9._-]/g, "");
-}
-
-function mergeUniqueFiles(prev: File[], incoming: File[], max = 10) {
-  const map = new Map<string, File>();
-  for (const f of prev) map.set(`${f.name}-${f.size}`, f);
-  for (const f of incoming) map.set(`${f.name}-${f.size}`, f);
-  return Array.from(map.values()).slice(0, max);
-}
-
-function bytesToMb(n?: number | null) {
-  if (!n || n <= 0) return "";
-  return `${(n / 1024 / 1024).toFixed(2)} MB`;
-}
 
 async function readSafeJson(res: Response) {
   const text = await res.text();
@@ -111,625 +77,435 @@ async function readSafeJson(res: Response) {
   }
 }
 
-function licenseLabel(v: LicenseLabel) {
-  if (v === "1 Month") return "1 Monat";
-  if (v === "3 Months") return "3 Monate";
-  if (v === "6 Months") return "6 Monate";
-  if (v === "12 Months") return "12 Monate";
-  return "Unbegrenzt";
+function formatDate(value?: string | null) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("de-DE");
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("de-DE");
+}
+
+function licenseLabel(v?: string | null) {
+  if (!v) return "—";
+  if (v === "M1") return "1 Monat";
+  if (v === "M3") return "3 Monate";
+  if (v === "M6") return "6 Monate";
+  if (v === "M12") return "12 Monate";
+  if (v === "UNLIMITED") return "Unbegrenzt";
+  return v;
+}
+
+function statusLabel(status: string) {
+  const s = String(status).toUpperCase();
+  if (s === "DRAFT") return "Entwurf";
+  if (s === "SUBMITTED") return "Eingereicht";
+  if (s === "REVIEW") return "In Prüfung";
+  if (s === "IN_PROGRESS") return "In Bearbeitung";
+  if (s === "DONE") return "Abgeschlossen";
+  if (s === "DECLINED") return "Abgelehnt";
+  return status.replaceAll("_", " ");
+}
+
+function statusClass(status: string) {
+  const s = String(status).toUpperCase();
+  if (s === "DONE") return "border-emerald-200 bg-emerald-50 text-emerald-900";
+  if (s === "DECLINED") return "border-rose-200 bg-rose-50 text-rose-900";
+  if (s === "SUBMITTED" || s === "REVIEW") return "border-amber-200 bg-amber-50 text-amber-900";
+  if (s === "IN_PROGRESS") return "border-blue-200 bg-blue-50 text-blue-900";
+  return "border-gray-200 bg-gray-50 text-gray-700";
+}
+
+function publicStorageUrl(asset?: { bucket: string; path: string } | null) {
+  if (!asset?.bucket || !asset?.path) return "";
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${asset.bucket}/${asset.path}`;
+}
+
+function InfoCard(props: {
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-[28px] border bg-white p-6 shadow-sm">
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f3eee7] text-gray-950">
+        {props.icon}
+      </div>
+      <div className="mt-5 text-2xl font-semibold text-gray-950">{props.value}</div>
+      <div className="mt-1 text-sm text-gray-500">{props.title}</div>
+    </div>
+  );
 }
 
 function Section(props: {
   title: string;
   subtitle?: string;
-  right?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border bg-white p-5 sm:p-8">
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">{props.title}</h2>
-          {props.subtitle ? (
-            <p className="mt-1 text-sm leading-6 text-gray-600">{props.subtitle}</p>
-          ) : null}
-        </div>
-        {props.right ? <div className="shrink-0">{props.right}</div> : null}
-      </div>
+    <section className="rounded-[28px] border bg-white p-5 shadow-sm sm:p-7">
+      <h2 className="text-lg font-semibold tracking-tight text-gray-950">{props.title}</h2>
+      {props.subtitle ? (
+        <p className="mt-1 text-sm leading-6 text-gray-500">{props.subtitle}</p>
+      ) : null}
       <div className="mt-6">{props.children}</div>
     </section>
   );
 }
 
-function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className={
-        "w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:ring-2 focus:ring-emerald-950/20 " +
-        (props.className ?? "")
-      }
-    />
-  );
-}
-
-function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return (
-    <textarea
-      {...props}
-      className={
-        "w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:ring-2 focus:ring-emerald-950/20 " +
-        (props.className ?? "")
-      }
-    />
-  );
-}
-
-async function presignUpload(token: string, bucket: string, path: string) {
-  const res = await fetch("/api/storage/presign", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ bucket, path }),
-  });
-
-  const { json, text } = await readSafeJson(res);
-  if (!res.ok) {
-    throw new Error(json?.error ?? `Upload-Vorbereitung fehlgeschlagen: ${text.slice(0, 200)}`);
-  }
-  if (!json?.token || !json?.path) {
-    throw new Error("Upload-Vorbereitung hat keinen Token/Pfad zurückgegeben.");
-  }
-
-  return json as { bucket: string; path: string; token: string; signedUrl?: string };
-}
-
-function mapLicenseToApi(value: LicenseLabel) {
-  if (value === "1 Month") return "M1";
-  if (value === "3 Months") return "M3";
-  if (value === "6 Months") return "M6";
-  if (value === "12 Months") return "M12";
-  return "UNLIMITED";
-}
-
-export default function NewBriefPage() {
+export default function BrandCampaignDetailPage() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
+  const campaignId = params.id;
 
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [campaign, setCampaign] = useState<CampaignDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [profile, setProfile] = useState<BrandProfile | null>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
+  async function load() {
+    try {
+      setLoading(true);
+      setError(null);
 
-  const companyName = profile?.companyName || "";
-  const contactName = profile?.contactName || "";
-  const contactEmail = profile?.contactEmail || "";
-  const contactPhone = profile?.contactPhone || "";
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
 
-  const [title, setTitle] = useState("");
-  const [deadline, setDeadline] = useState<string>("");
-  const [licenseTerm, setLicenseTerm] = useState<LicenseLabel>("3 Months");
-  const [deliverableCount, setDeliverableCount] = useState<number>(1);
-  const [description, setDescription] = useState("");
+      if (!token) {
+        router.push(`/login?next=/brand/briefs/${campaignId}`);
+        return;
+      }
 
-  const groups = Object.keys(NICHE_GROUPS) as NicheGroup[];
-  const [activeGroup, setActiveGroup] = useState<NicheGroup>(groups[0]);
-  const [selectedNiches, setSelectedNiches] = useState<string[]>([]);
-  const activeSubs = NICHE_GROUPS[activeGroup];
+      const res = await fetch(`/api/brand/briefs/${campaignId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
 
-  const [files, setFiles] = useState<File[]>([]);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+      const { json, text } = await readSafeJson(res);
+      if (!res.ok) throw new Error(json?.error ?? text.slice(0, 200));
+
+      setCampaign((json?.brief ?? json?.campaign ?? null) as CampaignDetail | null);
+    } catch (e: any) {
+      setError(e?.message ?? "Kampagne konnte nicht geladen werden.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function loadProfile() {
-      try {
-        const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaignId]);
 
-        if (!token) {
-          router.push("/login?next=/brand/briefs/new");
-          return;
-        }
-
-        const res = await fetch("/api/brand/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: "no-store",
-        });
-
-        const { json, text } = await readSafeJson(res);
-
-        if (!res.ok) {
-          throw new Error(json?.error ?? text.slice(0, 200));
-        }
-
-        if (!json?.profile || !json.profile.companyName) {
-          router.push("/brand/profile");
-          return;
-        }
-
-        setProfile(json.profile as BrandProfile);
-      } catch (e: any) {
-        alert(e?.message ?? "Brand-Profil konnte nicht geladen werden.");
-      } finally {
-        setProfileLoading(false);
-      }
-    }
-
-    loadProfile();
-  }, [router]);
-
-  function toggleNiche(n: string) {
-    setSelectedNiches((prev) => {
-      if (prev.includes(n)) return prev.filter((x) => x !== n);
-      if (prev.length >= 5) return prev;
-      return [...prev, n];
-    });
-  }
-
-  function clearNiches() {
-    setSelectedNiches([]);
-  }
-
-  function onPickFiles(list: FileList | null) {
-    if (!list) return;
-    setFiles((prev) => mergeUniqueFiles(prev, Array.from(list), 10));
-  }
-
-  function removeFile(idx: number) {
-    setFiles((prev) => prev.filter((_, i) => i !== idx));
-  }
-
-  const nichesHint = useMemo(
-    () => `${selectedNiches.length}/5 ausgewählt`,
-    [selectedNiches.length]
+  const creatorProfile = campaign?.assignedCreator?.creatorProfile ?? null;
+  const creatorImageUrl = useMemo(
+    () => publicStorageUrl(creatorProfile?.profileImageAsset ?? null),
+    [creatorProfile]
   );
 
-  const canSubmit = useMemo(() => {
+  if (loading) {
     return (
-      !!title.trim() &&
-      !!companyName.trim() &&
-      !!contactName.trim() &&
-      !!contactEmail.trim() &&
-      !saving &&
-      !uploading
+      <div className="min-h-screen bg-[#fbfaf7] px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl rounded-[36px] border bg-white p-8 text-sm text-gray-500 shadow-sm">
+          Kampagne wird geladen...
+        </div>
+      </div>
     );
-  }, [title, companyName, contactName, contactEmail, saving, uploading]);
-
-  async function requireSession() {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    const userId = data.session?.user?.id;
-
-    if (!token || !userId) {
-      router.push("/login?next=/brand/briefs/new");
-      return null;
-    }
-    return { token, userId };
   }
 
-  async function createDraftBrief(token: string) {
-    const res = await fetch("/api/brand/briefs", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        title: title.trim(),
-        description: description.trim() || null,
-        deadline: deadline
-          ? new Date(Date.now() + Number(deadline) * 24 * 60 * 60 * 1000).toISOString()
-          : null,
-        licenseTerm: mapLicenseToApi(licenseTerm),
-        deliverableCount,
-        nicheGroup: activeGroup,
-        niches: selectedNiches.slice(0, 5),
-        companyName: companyName.trim() || null,
-        contactName: contactName.trim() || null,
-        contactEmail: contactEmail.trim() || null,
-        contactPhone: contactPhone.trim() || null,
-      }),
-    });
+  if (error || !campaign) {
+    return (
+      <div className="min-h-screen bg-[#fbfaf7] px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <Link
+            href="/brand/briefs"
+            className="inline-flex rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50"
+          >
+            ← Zurück zu Kampagnen
+          </Link>
 
-    const { json, text } = await readSafeJson(res);
-    if (!res.ok) {
-      throw new Error(json?.error ?? `Briefing konnte nicht erstellt werden: ${text.slice(0, 200)}`);
-    }
-
-    const briefId = (json?.brief?.id || json?.briefId) as string | undefined;
-    if (!briefId) throw new Error("Briefing wurde erstellt, aber es wurde keine Briefing-ID zurückgegeben.");
-
-    return briefId;
-  }
-
-  async function uploadAllFiles(token: string, userId: string, briefId: string) {
-    if (files.length === 0) return;
-
-    setUploading(true);
-    try {
-      for (const file of files) {
-        const bucket = "ugc";
-        const path = `users/${userId}/briefs/${briefId}/${crypto.randomUUID()}-${safeFileName(
-          file.name
-        )}`;
-
-        const presign = await presignUpload(token, bucket, path);
-
-        const up = await supabase.storage
-          .from(bucket)
-          .uploadToSignedUrl(presign.path, presign.token, file, {
-            contentType: file.type || "application/octet-stream",
-          });
-
-        if (up.error) throw new Error(up.error.message ?? "Upload fehlgeschlagen.");
-      }
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  async function submitBrief(token: string, briefId: string) {
-    const res = await fetch(`/api/brand/briefs/${briefId}/submit`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    const { json, text } = await readSafeJson(res);
-    if (!res.ok) {
-      throw new Error(json?.error ?? `Einreichen fehlgeschlagen: ${text.slice(0, 200)}`);
-    }
-  }
-
-  async function onSubmit() {
-    try {
-      setSaving(true);
-
-      const session = await requireSession();
-      if (!session) return;
-
-      const briefId = await createDraftBrief(session.token);
-      await uploadAllFiles(session.token, session.userId, briefId);
-      await submitBrief(session.token, briefId);
-
-      router.push("/brand/dashboard");
-      router.refresh();
-    } catch (e: any) {
-      alert(e?.message ?? "Unbekannter Fehler");
-    } finally {
-      setSaving(false);
-      setUploading(false);
-    }
-  }
-
-  if (profileLoading) {
-    return <div className="p-6 text-sm text-gray-600 sm:p-8">Profil wird geladen...</div>;
+          <div className="mt-6 rounded-[36px] border border-rose-200 bg-rose-50 p-8 text-sm text-rose-800">
+            {error ?? "Kampagne wurde nicht gefunden."}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="px-4 py-6 sm:p-8">
-      <div className="mx-auto max-w-4xl rounded-3xl border bg-white/80 p-5 shadow-sm sm:p-8 lg:p-10">
-        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h1 className="font-serif text-4xl leading-[0.95] tracking-tight text-gray-900 sm:text-5xl">
-              Briefing erstellen
-            </h1>
-            <p className="mt-3 text-sm leading-6 text-gray-600">
-              Erstelle ein neues Briefing, lade optional Dateien hoch und reiche es zur Prüfung ein.
-            </p>
-          </div>
+    <div className="min-h-screen bg-[#fbfaf7] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <Link
+            href="/brand/briefs"
+            className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50"
+          >
+            ← Alle Kampagnen
+          </Link>
 
-          <div className="flex items-center gap-3">
-            <Link
-              href="/brand/dashboard"
-              className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-            >
-              Zurück
-            </Link>
-          </div>
+          <Link
+            href="/brand/support"
+            className="inline-flex items-center gap-2 rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50"
+          >
+            <LifeBuoy className="h-4 w-4" />
+            Support
+          </Link>
         </div>
 
-        <div className="mt-10 space-y-6">
-          <Section
-            title="Kontaktinformationen"
-            subtitle="Automatisch aus deinem Brand-Profil übernommen"
-            right={
-              <Link
-                href="/brand/profile"
-                className="text-xs font-semibold text-gray-500 underline underline-offset-2"
-              >
-                Profil bearbeiten
-              </Link>
-            }
-          >
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="text-sm font-medium text-gray-700">Firmenname</label>
-                <div className="mt-2">
-                  <Input value={companyName} readOnly />
-                </div>
+        <div className="rounded-[36px] border bg-white/70 p-5 shadow-sm sm:p-8 lg:p-12">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
+                Kampagnendetail
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700">Ansprechperson</label>
-                <div className="mt-2">
-                  <Input value={contactName} readOnly />
-                </div>
-              </div>
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-gray-950 sm:text-5xl">
+                {campaign.title}
+              </h1>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700">E-Mail</label>
-                <div className="mt-2">
-                  <Input value={contactEmail} readOnly />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700">Telefon</label>
-                <div className="mt-2">
-                  <Input value={contactPhone} readOnly />
-                </div>
-              </div>
-            </div>
-          </Section>
-
-          <Section title="Kampagneninformationen" subtitle="Grunddaten für dein Briefing">
-            <div className="grid gap-5">
-              <div>
-                <label className="text-sm font-medium text-gray-700">Briefing-Titel</label>
-                <div className="mt-2">
-                  <Input
-                    placeholder="z. B. TikTok UGC für neues Produkt"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Deadline</label>
-                  <div className="mt-2">
-                    <select
-                      value={deadline}
-                      onChange={(e) => setDeadline(e.target.value)}
-                      className="w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-emerald-950/20"
-                    >
-                      <option value="">Keine Deadline</option>
-                      <option value="7">7 Tage</option>
-                      <option value="14">14 Tage</option>
-                      <option value="30">30 Tage</option>
-                      <option value="60">60 Tage</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Anzahl Videos</label>
-                  <div className="mt-2">
-                    <select
-                      value={String(deliverableCount)}
-                      onChange={(e) => setDeliverableCount(Number(e.target.value))}
-                      className="w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-emerald-950/20"
-                    >
-                      <option value="1">1 Video</option>
-                      <option value="2">2 Videos</option>
-                      <option value="3">3 Videos</option>
-                      <option value="4">4 Videos</option>
-                      <option value="5">5 Videos</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Lizenz</label>
-                  <div className="mt-2">
-                    <select
-                      className="w-full appearance-none rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-emerald-950/20"
-                      value={licenseTerm}
-                      onChange={(e) => setLicenseTerm(e.target.value as LicenseLabel)}
-                    >
-                      {LICENSE_OPTIONS.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {licenseLabel(opt)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Section>
-
-          <Section title="Kampagnenbeschreibung" subtitle="Ziele, Deliverables, Do’s & Don’ts">
-            <label className="text-sm font-medium text-gray-700">
-              Beschreibung <span className="text-gray-400">(optional)</span>
-            </label>
-            <div className="mt-2">
-              <Textarea
-                className="min-h-[220px]"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Beschreibe dein Briefing klar: Hooks, Blickwinkel, Deliverables, Beispiele..."
-              />
-            </div>
-          </Section>
-
-          <Section
-            title="Ziel-Nischen"
-            subtitle="Wähle zuerst eine Nischengruppe und danach bis zu 5 Unter-Nischen."
-            right={
-              <div className="flex items-center gap-3">
-                <span className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700">
-                  {nichesHint}
-                </span>
-                <button
-                  type="button"
-                  onClick={clearNiches}
-                  className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-900 hover:bg-gray-50"
+              <div className="mt-5 flex flex-wrap gap-2">
+                <span
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusClass(
+                    campaign.status
+                  )}`}
                 >
-                  Leeren
-                </button>
+                  {statusLabel(campaign.status)}
+                </span>
+
+                <span
+                  className={
+                    campaign.consultationBooked
+                      ? "rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-900"
+                      : "rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900"
+                  }
+                >
+                  {campaign.consultationBooked ? "Erstgespräch gebucht" : "Erstgespräch ausstehend"}
+                </span>
               </div>
-            }
-          >
-            <div>
-              <div className="text-xs font-semibold text-gray-600">Nischengruppen</div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {groups.map((g) => {
-                  const active = g === activeGroup;
-                  return (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => setActiveGroup(g)}
-                      className={
-                        active
-                          ? "rounded-full bg-emerald-950 px-4 py-2 text-xs font-semibold text-white"
-                          : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50"
-                      }
-                    >
-                      {g}
-                    </button>
-                  );
-                })}
-              </div>
+
+              <p className="mt-5 max-w-3xl text-sm leading-6 text-gray-500">
+                Hier findest du alle wichtigen Informationen, Dateien, Termine und nächsten Schritte zu dieser Kampagne.
+              </p>
             </div>
 
-            <div className="mt-6 rounded-2xl border bg-white p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="text-xs font-semibold text-gray-600">
-                  {activeGroup} – Unter-Nischen
+            <div className="rounded-[28px] border bg-white p-5 shadow-sm lg:w-[320px]">
+              <div className="text-sm font-semibold text-gray-950">Nächster Schritt</div>
+              <p className="mt-2 text-sm leading-6 text-gray-500">
+                Unser Team prüft die Kampagne und koordiniert die nächsten Schritte über Primely Content.
+              </p>
+
+              <Link
+                href="/brand/support"
+                className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-gray-950 px-5 py-3 text-sm font-semibold text-white hover:opacity-90"
+              >
+                Rückfrage stellen
+              </Link>
+            </div>
+          </div>
+
+          <div className="mt-10 grid gap-5 md:grid-cols-4">
+            <InfoCard
+              title="Videos"
+              value={campaign.deliverableCount ?? 1}
+              icon={<PackageCheck className="h-5 w-5" />}
+            />
+            <InfoCard
+              title="Dateien"
+              value={campaign._count?.assets ?? 0}
+              icon={<FileText className="h-5 w-5" />}
+            />
+            <InfoCard
+              title="Deliverables"
+              value={campaign._count?.deliverables ?? 0}
+              icon={<CheckCircle className="h-5 w-5" />}
+            />
+            <InfoCard
+              title="Support"
+              value={campaign._count?.supportTickets ?? 0}
+              icon={<LifeBuoy className="h-5 w-5" />}
+            />
+          </div>
+
+          <div className="mt-8 grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+            <Section
+              title="Kampagneninformationen"
+              subtitle="Zusammenfassung der wichtigsten Angaben."
+            >
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border bg-[#fbfaf7] p-4">
+                  <div className="text-xs text-gray-500">Erstellt</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-950">
+                    {formatDate(campaign.createdAt)}
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500">max. 5</div>
+
+                <div className="rounded-2xl border bg-[#fbfaf7] p-4">
+                  <div className="text-xs text-gray-500">Zuletzt aktualisiert</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-950">
+                    {formatDate(campaign.updatedAt)}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border bg-[#fbfaf7] p-4">
+                  <div className="text-xs text-gray-500">Deadline</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-950">
+                    {formatDate(campaign.deadline)}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border bg-[#fbfaf7] p-4">
+                  <div className="text-xs text-gray-500">Lizenz</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-950">
+                    {licenseLabel(campaign.licenseTerm)}
+                  </div>
+                </div>
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                {activeSubs.map((n) => {
-                  const selected = selectedNiches.includes(n);
-                  const disabled = !selected && selectedNiches.length >= 5;
+              <div className="mt-5 rounded-2xl border bg-[#fbfaf7] p-4">
+                <div className="text-xs text-gray-500">Beschreibung</div>
+                <div className="mt-2 whitespace-pre-wrap text-sm leading-6 text-gray-700">
+                  {campaign.description?.trim() || "Keine Beschreibung hinterlegt."}
+                </div>
+              </div>
+            </Section>
 
-                  return (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => toggleNiche(n)}
-                      disabled={disabled}
-                      className={
-                        selected
-                          ? "rounded-full bg-emerald-950 px-4 py-2 text-xs font-semibold text-white"
-                          : disabled
-                          ? "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-400 opacity-60"
-                          : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50"
-                      }
-                      title={disabled ? "Maximal 5 ausgewählt" : undefined}
-                    >
-                      {n}
-                    </button>
-                  );
-                })}
+            <Section
+              title="Erstgespräch"
+              subtitle="Terminstatus für diese Kampagne."
+            >
+              <div
+                className={
+                  campaign.consultationBooked
+                    ? "rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900"
+                    : "rounded-3xl border border-amber-200 bg-amber-50 p-5 text-amber-900"
+                }
+              >
+                <div className="flex items-start gap-3">
+                  {campaign.consultationBooked ? (
+                    <CheckCircle className="mt-0.5 h-5 w-5" />
+                  ) : (
+                    <Clock className="mt-0.5 h-5 w-5" />
+                  )}
+
+                  <div>
+                    <div className="text-sm font-semibold">
+                      {campaign.consultationBooked
+                        ? "Erstgespräch gebucht"
+                        : "Erstgespräch noch ausstehend"}
+                    </div>
+                    <div className="mt-1 text-sm leading-6">
+                      {campaign.consultationBooked
+                        ? `Termin bestätigt: ${formatDateTime(campaign.consultationBookedAt)}`
+                        : "Bitte buche das Erstgespräch, damit wir die Kampagne final prüfen können."}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {selectedNiches.length > 0 ? (
-                <div className="mt-5">
-                  <div className="text-xs font-semibold text-gray-600">Ausgewählt</div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {selectedNiches.map((n) => (
-                      <button
+              {campaign.consultationBookingUrl ? (
+                <a
+                  href={campaign.consultationBookingUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-5 inline-flex rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50"
+                >
+                  Termin öffnen
+                </a>
+              ) : null}
+            </Section>
+
+            <Section
+              title="Nischen & Fokus"
+              subtitle="Diese Angaben nutzen wir für Creator-Matching und Kampagnenbewertung."
+            >
+              <div className="flex flex-wrap gap-2">
+                {campaign.nicheGroup ? (
+                  <span className="rounded-full bg-gray-950 px-4 py-2 text-xs font-semibold text-white">
+                    {campaign.nicheGroup}
+                  </span>
+                ) : null}
+
+                {(campaign.niches ?? []).map((n) => (
+                  <span
+                    key={n}
+                    className="rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-700"
+                  >
+                    {n}
+                  </span>
+                ))}
+
+                {!campaign.nicheGroup && (campaign.niches ?? []).length === 0 ? (
+                  <span className="text-sm text-gray-500">Keine Nischen hinterlegt.</span>
+                ) : null}
+              </div>
+            </Section>
+
+            <Section
+              title="Creator"
+              subtitle="Creator-Informationen werden anonymisiert angezeigt. Die Kommunikation läuft über Primely Content."
+            >
+              {creatorProfile ? (
+                <div className="rounded-3xl border bg-[#fbfaf7] p-5">
+                  <div className="flex items-center gap-5">
+                    <div className="relative h-24 w-24 overflow-hidden rounded-3xl border bg-white">
+                      {creatorImageUrl ? (
+                        <Image
+                          src={creatorImageUrl}
+                          alt="Creator Profilbild"
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-gray-400">
+                          <ImageIcon className="h-8 w-8" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="text-sm font-semibold text-gray-950">
+                        Creator wurde ausgewählt
+                      </div>
+                      <p className="mt-1 text-sm leading-6 text-gray-500">
+                        Persönliche Kontaktdaten werden nicht angezeigt. Alle Abstimmungen erfolgen über Primely Content.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {creatorProfile.nicheGroup ? (
+                      <span className="rounded-full bg-gray-950 px-3 py-1 text-xs font-semibold text-white">
+                        {creatorProfile.nicheGroup}
+                      </span>
+                    ) : null}
+
+                    {(creatorProfile.niches ?? []).slice(0, 5).map((n) => (
+                      <span
                         key={n}
-                        type="button"
-                        onClick={() => toggleNiche(n)}
-                        className="rounded-full bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white"
-                        title="Klicken zum Entfernen"
+                        className="rounded-full border bg-white px-3 py-1 text-xs text-gray-600"
                       >
-                        {n} ×
-                      </button>
+                        {n}
+                      </span>
                     ))}
                   </div>
                 </div>
-              ) : null}
-            </div>
-          </Section>
-
-          <Section
-            title="Briefing-Dateien hochladen"
-            subtitle="Optional – du kannst Dateien jetzt oder später hochladen"
-            right={
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50"
-              >
-                Dateien hinzufügen
-              </button>
-            }
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={(e) => onPickFiles(e.target.files)}
-              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-            />
-
-            <div className="rounded-2xl border bg-white p-4">
-              <div className="text-xs font-semibold text-gray-600">Upload-Warteschlange</div>
-
-              {files.length === 0 ? (
-                <div className="mt-3 text-sm leading-6 text-gray-500">
-                  Keine Dateien ausgewählt. Klicke auf{" "}
-                  <span className="font-semibold">Dateien hinzufügen</span>.
-                </div>
               ) : (
-                <div className="mt-3 space-y-2">
-                  {files.map((f, idx) => (
-                    <div
-                      key={`${f.name}-${f.size}-${idx}`}
-                      className="flex flex-col gap-3 rounded-xl border bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium text-gray-900">{f.name}</div>
-                        <div className="text-xs text-gray-500">{bytesToMb(f.size)}</div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => removeFile(idx)}
-                        className="rounded-full border px-3 py-1 text-xs font-semibold hover:bg-gray-50"
-                      >
-                        Entfernen
-                      </button>
-                    </div>
-                  ))}
+                <div className="rounded-3xl border border-dashed bg-[#fbfaf7] p-8 text-center">
+                  <Megaphone className="mx-auto h-8 w-8 text-gray-400" />
+                  <div className="mt-3 text-sm font-semibold text-gray-950">
+                    Noch kein Creator zugewiesen
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-gray-500">
+                    Nach der Prüfung schlagen wir passende Creator für diese Kampagne vor.
+                  </p>
                 </div>
               )}
-
-              <p className="mt-3 text-xs text-gray-500">Max. 10 Dateien • bis zu 50 MB pro Datei</p>
-            </div>
-          </Section>
-
-          <div className="sticky bottom-4 rounded-3xl border bg-white/95 p-4 shadow-sm backdrop-blur">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="text-sm text-gray-600">
-                {uploading ? "Dateien werden hochgeladen..." : saving ? "Wird gespeichert..." : "Bereit"}
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={onSubmit}
-                  disabled={!canSubmit}
-                  className="w-full rounded-full bg-emerald-950 px-8 py-3 text-sm font-semibold text-white shadow hover:opacity-95 disabled:opacity-50 sm:w-auto"
-                >
-                  {saving
-                    ? uploading
-                      ? "Upload läuft..."
-                      : "Wird gespeichert..."
-                    : "Briefing einreichen"}
-                </button>
-              </div>
-            </div>
+            </Section>
           </div>
         </div>
       </div>

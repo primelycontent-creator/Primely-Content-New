@@ -4,18 +4,44 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  FileText,
+  Megaphone,
+  PlusCircle,
   LifeBuoy,
   User,
   Settings,
 } from "lucide-react";
 
 const navItems = [
-  { href: "/brand/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/brand/briefs/new", label: "Briefings", icon: FileText },
-  { href: "/brand/support", label: "Support", icon: LifeBuoy },
-  { href: "/brand/profile", label: "Brand Profile", icon: User },
-  { href: "/settings", label: "Settings", icon: Settings },
+  {
+    href: "/brand/dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    href: "/brand/briefs",
+    label: "Kampagnen",
+    icon: Megaphone,
+  },
+  {
+    href: "/brand/briefs/new",
+    label: "Neue Kampagne",
+    icon: PlusCircle,
+  },
+  {
+    href: "/brand/support",
+    label: "Support",
+    icon: LifeBuoy,
+  },
+  {
+    href: "/brand/profile",
+    label: "Brand-Profil",
+    icon: User,
+  },
+  {
+    href: "/settings",
+    label: "Einstellungen",
+    icon: Settings,
+  },
 ];
 
 export default function BrandSidebar() {
@@ -24,12 +50,15 @@ export default function BrandSidebar() {
   return (
     <div className="rounded-3xl border border-black/15 bg-white/35 p-6 shadow-sm">
       <div className="mb-6 text-xs font-semibold tracking-widest text-slate-400">
-        BRAND
+        PRIMELY CONTENT
       </div>
 
       <nav className="space-y-2">
         {navItems.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          const active =
+            pathname === item.href ||
+            pathname.startsWith(item.href + "/");
+
           const Icon = item.icon;
 
           return (
@@ -43,8 +72,15 @@ export default function BrandSidebar() {
                   : "text-slate-900 hover:bg-black/5",
               ].join(" ")}
             >
-              <Icon className={active ? "h-5 w-5" : "h-5 w-5 opacity-70"} />
-              <span className="font-medium">{item.label}</span>
+              <Icon
+                className={
+                  active ? "h-5 w-5" : "h-5 w-5 opacity-70"
+                }
+              />
+
+              <span className="font-medium">
+                {item.label}
+              </span>
             </Link>
           );
         })}
