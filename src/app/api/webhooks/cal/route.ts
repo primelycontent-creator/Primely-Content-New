@@ -4,64 +4,86 @@ import prisma from "@/lib/prisma";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const payload = body?.payload ?? {};
 
     console.log("CAL WEBHOOK RECEIVED:", JSON.stringify(body, null, 2));
 
-    const payload = body.payload;
-
-    const uid = payload?.uid;
-    const calBookingId = String(payload?.bookingId || "");
-
-    // 🔑 Wichtig: customInput für BriefId
-    const briefId = payload?.metadata?.briefId || null;
+    const uid = payload?.uid ? String(payload.uid) : null;
+    if (!uid) return NextResponse.json({ error: "Missing uid" }, { status: 400 });
 
     const attendee = payload?.attendees?.[0];
 
+    const briefId =
+      payload?.metadata?.briefId ||
+      payload?.customInputs?.briefId ||
+      payload?.responses?.briefId?.value ||
+      null;
+
+    const bookingType =
+      payload?.metadata?.bookingType ||
+      payload?.customInputs?.bookingType ||
+      "INITIAL";
+
+    const startTime = payload?.startTime ? new Date(payload.startTime) : null;
+    const endTime = payload?.endTime ? new Date(payload.endTime) : null;
+    const videoCallUrl =
+      payload?.videoCallData?.url ||
+      payload?.metadata?.videoCallUrl ||
+      payload?.platformBookingUrl ||
+      null;
+
     await prisma.calendarBooking.upsert({
-      where: {
-        calUid: uid,
-      },
+      where: { calUid: uid },
       update: {
-        status: payload?.status,
-        videoCallUrl: payload?.videoCallData?.url,
+        triggerEvent: body?.triggerEvent || "UNKNOWN",
+        status: payload?.status || null,
+        videoCallUrl,
+        startTime,
+        endTime,
+        rawPayload: body,
       },
       create: {
         calUid: uid,
-        calBookingId,
-        triggerEvent: body.triggerEvent,
-
-        eventTypeId: payload?.eventTypeId,
-        eventTitle: payload?.eventTitle,
-
-        bookingType: briefId ? "FOLLOW_UP" : "INITIAL",
-
+        calBookingId: payload?.bookingId ? String(payload.bookingId) : null,
+        triggerEvent: body?.triggerEvent || "UNKNOWN",
+        eventTypeId: payload?.eventTypeId ?? null,
+        eventTitle: payload?.eventTitle || payload?.title || null,
+        bookingType,
         briefId,
-
-        attendeeName: attendee?.name,
-        attendeeEmail: attendee?.email,
-        attendeePhone: attendee?.phoneNumber,
-
-        startTime: payload?.startTime ? new Date(payload.startTime) : null,
-        endTime: payload?.endTime ? new Date(payload.endTime) : null,
-
-        videoCallUrl: payload?.videoCallData?.url,
-        status: payload?.status,
-
+        attendeeName: attendee?.name || null,
+        attendeeEmail: attendee?.email || null,
+        attendeePhone: attendee?.phoneNumber || null,
+        startTime,
+        endTime,
+        videoCallUrl,
+        status: payload?.status || null,
         rawPayload: body,
       },
     });
 
-    // 🔥 OPTIONAL: Brief automatisch updaten
-    if (briefId) {
+    if (briefId && body?.triggerEvent !== "BOOKING_CANCELLED") {
       await prisma.brief.update({
         where: { id: briefId },
         data: {
           consultationBooked: true,
-          consultationBookedAt: payload?.startTime ? new Date(payload.startTime) : null,
+          consultationBookedAt: startTime,
+          consultationEventType: bookingType,
           consultationBookingUid: uid,
-          consultationBookingUrl: payload?.videoCallData?.url,
-          consultationAttendeeName: attendee?.name,
-          consultationAttendeeEmail: attendee?.email,
+          consultationBookingUrl: videoCallUrl,
+          consultationAttendeeName: attendee?.name || null,
+          consultationAttendeeEmail: attendee?.email || null,
+        },
+      });
+    }
+
+    if (briefId && body?.triggerEvent === "BOOKING_CANCELLED") {
+      await prisma.brief.update({
+        where: { id: briefId },
+        data: {
+          consultationBooked: false,
+          consultationBookedAt: null,
+          consultationBookingUid: null,
+          consultationBookingUrl: null,
         },
       });
     }
@@ -69,6 +91,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error("CAL WEBHOOK ERROR:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json(
+      { error: err?.message ?? "Webhook error" },
+      { status: 500 }
+    );
   }
 }
