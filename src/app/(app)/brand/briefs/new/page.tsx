@@ -90,7 +90,6 @@ type BriefDetailDto = {
   id: string;
   consultationBooked?: boolean | null;
   consultationBookedAt?: string | null;
-  consultationBookingUrl?: string | null;
 };
 
 function safeFileName(name: string) {
@@ -126,28 +125,8 @@ function mapLicenseToApi(value: LicenseLabel) {
   return "UNLIMITED";
 }
 
-function Icon(props: {
-  name:
-    | "file"
-    | "calendar"
-    | "upload"
-    | "check"
-    | "chevron"
-    | "brief"
-    | "target"
-    | "info";
-}) {
+function Icon(props: { name: "file" | "calendar" | "upload" | "check" | "brief" | "target" | "info" }) {
   const common = "h-5 w-5";
-
-  if (props.name === "file") {
-    return (
-      <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M7 3h7l4 4v14H7z" />
-        <path d="M14 3v5h5" />
-        <path d="M9 13h6M9 17h6" />
-      </svg>
-    );
-  }
 
   if (props.name === "calendar") {
     return (
@@ -208,7 +187,9 @@ function Icon(props: {
 
   return (
     <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="m9 18 6-6-6-6" />
+      <path d="M7 3h7l4 4v14H7z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 13h6M9 17h6" />
     </svg>
   );
 }
@@ -346,24 +327,13 @@ export default function NewBriefPage() {
       !savingFinal &&
       !uploading
     );
-  }, [
-    title,
-    companyName,
-    contactName,
-    contactEmail,
-    savingDraft,
-    savingFinal,
-    uploading,
-  ]);
+  }, [title, companyName, contactName, contactEmail, savingDraft, savingFinal, uploading]);
 
   const canSubmit = useMemo(() => {
     return Boolean(draftBriefId && consultationBooked && !savingFinal && !uploading);
   }, [draftBriefId, consultationBooked, savingFinal, uploading]);
 
-  const nichesHint = useMemo(
-    () => `${selectedNiches.length}/5 ausgewählt`,
-    [selectedNiches.length]
-  );
+  const nichesHint = useMemo(() => `${selectedNiches.length}/5 ausgewählt`, [selectedNiches.length]);
 
   useEffect(() => {
     async function loadProfile() {
@@ -408,9 +378,13 @@ export default function NewBriefPage() {
 
     const initCal = () => {
       const Cal = (window as any).Cal;
-      if (!Cal) return false;
+      const element = document.getElementById(calEmbedId);
+
+      if (!Cal || !element) return false;
 
       try {
+        element.innerHTML = "";
+
         Cal("init", {
           origin: "https://cal.com",
         });
@@ -435,7 +409,8 @@ export default function NewBriefPage() {
         });
 
         return true;
-      } catch {
+      } catch (err) {
+        console.error("Cal embed init failed:", err);
         return false;
       }
     };
@@ -559,6 +534,7 @@ export default function NewBriefPage() {
       setUploading(false);
     }
   }
+
   async function startBookingStep() {
     try {
       setSavingDraft(true);
@@ -686,7 +662,41 @@ export default function NewBriefPage() {
 
   return (
     <>
-      <Script src="https://app.cal.com/embed/embed.js" strategy="afterInteractive" />
+      <Script
+        id="cal-embed-bootstrap"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function (C, A, L) {
+              let p = function (a, ar) { a.q.push(ar); };
+              let d = C.document;
+              C.Cal = C.Cal || function () {
+                let cal = C.Cal;
+                let ar = arguments;
+                if (!cal.loaded) {
+                  cal.ns = {};
+                  cal.q = cal.q || [];
+                  d.head.appendChild(d.createElement("script")).src = A;
+                  cal.loaded = true;
+                }
+                if (ar[0] === L) {
+                  const api = function () { p(api, arguments); };
+                  const namespace = ar[1];
+                  api.q = api.q || [];
+                  if (typeof namespace === "string") {
+                    cal.ns[namespace] = cal.ns[namespace] || api;
+                    p(cal.ns[namespace], ar);
+                    return;
+                  }
+                  p(cal, ar);
+                  return;
+                }
+                p(cal, ar);
+              };
+            })(window, "https://app.cal.com/embed/embed.js", "init");
+          `,
+        }}
+      />
 
       <div className="min-h-screen bg-[#fbfaf7] px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
@@ -722,205 +732,93 @@ export default function NewBriefPage() {
               </div>
 
               <div className="rounded-[28px] border bg-white p-5 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f3eee7] text-gray-950">
-                    <Icon name="calendar" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-gray-950">Ablauf</div>
-                    <div className="text-xs text-gray-500">Kampagne + Erstgespräch</div>
-                  </div>
-                </div>
-
+                <div className="text-sm font-semibold text-gray-950">Ablauf</div>
                 <div className="mt-5 space-y-3 text-sm text-gray-600">
-                  <div className="flex gap-3">
-                    <span className="font-semibold text-gray-950">1.</span>
-                    <span>Kampagnendaten ausfüllen</span>
-                  </div>
-                  <div className="flex gap-3">
-                    <span className="font-semibold text-gray-950">2.</span>
-                    <span>Erstgespräch direkt im Kalender buchen</span>
-                  </div>
-                  <div className="flex gap-3">
-                    <span className="font-semibold text-gray-950">3.</span>
-                    <span>Kampagne final einreichen</span>
-                  </div>
+                  <div>1. Kampagnendaten ausfüllen</div>
+                  <div>2. Erstgespräch direkt im Kalender buchen</div>
+                  <div>3. Kampagne final einreichen</div>
                 </div>
               </div>
             </div>
 
             <div className="mt-10 grid gap-6">
-              <Section
-                eyebrow="Schritt 1"
-                title="Kontaktinformationen"
-                subtitle="Diese Angaben übernehmen wir automatisch aus deinem Brand-Profil."
-                icon={<Icon name="brief" />}
-                right={
-                  <Link href="/brand/profile" className="text-xs font-semibold text-gray-500 underline">
-                    Profil bearbeiten
-                  </Link>
-                }
-              >
+              <Section eyebrow="Schritt 1" title="Kontaktinformationen" subtitle="Diese Angaben übernehmen wir automatisch aus deinem Brand-Profil." icon={<Icon name="brief" />}>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Firma</label>
-                    <Input className="mt-2" value={companyName} readOnly />
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Ansprechpartner</label>
-                    <Input className="mt-2" value={contactName} readOnly />
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">E-Mail</label>
-                    <Input className="mt-2" value={contactEmail} readOnly />
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Telefon</label>
-                    <Input className="mt-2" value={contactPhone} readOnly />
-                  </div>
+                  <Input value={companyName} readOnly placeholder="Firma" />
+                  <Input value={contactName} readOnly placeholder="Ansprechpartner" />
+                  <Input value={contactEmail} readOnly placeholder="E-Mail" />
+                  <Input value={contactPhone} readOnly placeholder="Telefon" />
                 </div>
               </Section>
 
-              <Section
-                eyebrow="Schritt 2"
-                title="Kampagnendaten"
-                subtitle="Diese Informationen helfen uns, passende Creator und eine realistische Umsetzung einzuschätzen."
-                icon={<Icon name="file" />}
-              >
+              <Section eyebrow="Schritt 2" title="Kampagnendaten" icon={<Icon name="file" />}>
                 <div className="grid gap-5">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Kampagnen-Titel</label>
-                    <Input
-                      className="mt-2"
-                      disabled={formLocked}
-                      placeholder="z. B. TikTok UGC für neues Produkt"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                    />
-                  </div>
+                  <Input
+                    disabled={formLocked}
+                    placeholder="Kampagnen-Titel"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                  />
 
                   <div className="grid gap-4 md:grid-cols-3">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Deadline</label>
-                      <select
-                        value={deadline}
-                        disabled={formLocked}
-                        onChange={(e) => setDeadline(e.target.value)}
-                        className="mt-2 w-full rounded-2xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gray-950/10 disabled:bg-gray-50 disabled:text-gray-500"
-                      >
-                        <option value="">Keine Deadline</option>
-                        <option value="7">7 Tage</option>
-                        <option value="14">14 Tage</option>
-                        <option value="30">30 Tage</option>
-                        <option value="60">60 Tage</option>
-                      </select>
-                    </div>
+                    <select value={deadline} disabled={formLocked} onChange={(e) => setDeadline(e.target.value)} className="rounded-2xl border bg-white px-4 py-3 text-sm">
+                      <option value="">Keine Deadline</option>
+                      <option value="7">7 Tage</option>
+                      <option value="14">14 Tage</option>
+                      <option value="30">30 Tage</option>
+                      <option value="60">60 Tage</option>
+                    </select>
 
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Anzahl Videos</label>
-                      <select
-                        value={String(deliverableCount)}
-                        disabled={formLocked}
-                        onChange={(e) => setDeliverableCount(Number(e.target.value))}
-                        className="mt-2 w-full rounded-2xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gray-950/10 disabled:bg-gray-50 disabled:text-gray-500"
-                      >
-                        <option value="1">1 Video</option>
-                        <option value="2">2 Videos</option>
-                        <option value="3">3 Videos</option>
-                        <option value="4">4 Videos</option>
-                        <option value="5">5 Videos</option>
-                      </select>
-                    </div>
+                    <select value={String(deliverableCount)} disabled={formLocked} onChange={(e) => setDeliverableCount(Number(e.target.value))} className="rounded-2xl border bg-white px-4 py-3 text-sm">
+                      <option value="1">1 Video</option>
+                      <option value="2">2 Videos</option>
+                      <option value="3">3 Videos</option>
+                      <option value="4">4 Videos</option>
+                      <option value="5">5 Videos</option>
+                    </select>
 
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Lizenz</label>
-                      <select
-                        value={licenseTerm}
-                        disabled={formLocked}
-                        onChange={(e) => setLicenseTerm(e.target.value as LicenseLabel)}
-                        className="mt-2 w-full rounded-2xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gray-950/10 disabled:bg-gray-50 disabled:text-gray-500"
-                      >
-                        {LICENSE_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <select value={licenseTerm} disabled={formLocked} onChange={(e) => setLicenseTerm(e.target.value as LicenseLabel)} className="rounded-2xl border bg-white px-4 py-3 text-sm">
+                      {LICENSE_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </Section>
 
-              <Section
-                eyebrow="Schritt 3"
-                title="Beschreibung"
-                subtitle="Je klarer die Kampagne beschrieben ist, desto besser können wir Creator, Skriptidee und Umsetzung vorbereiten."
-                icon={<Icon name="info" />}
-              >
-                <label className="text-sm font-medium text-gray-700">
-                  Kampagnenbeschreibung <span className="text-gray-400">(optional)</span>
-                </label>
+              <Section eyebrow="Schritt 3" title="Beschreibung" icon={<Icon name="info" />}>
                 <Textarea
                   disabled={formLocked}
-                  className="mt-2 min-h-[220px]"
+                  className="min-h-[220px]"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Beschreibe Produkt, Zielgruppe, gewünschte Hooks, No-Gos, Must-haves, Beispielvideos oder besondere Anforderungen."
+                  placeholder="Beschreibe Produkt, Zielgruppe, gewünschte Hooks, No-Gos, Must-haves oder besondere Anforderungen."
                 />
               </Section>
 
-              <Section
-                eyebrow="Schritt 4"
-                title="Ziel-Nischen"
-                subtitle="Wähle die Nischen, die am besten zu Produkt und Zielgruppe passen."
-                icon={<Icon name="target" />}
-                right={
-                  <div className="flex items-center gap-3">
-                    <span className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700">
-                      {nichesHint}
-                    </span>
+              <Section eyebrow="Schritt 4" title="Ziel-Nischen" icon={<Icon name="target" />}>
+                <div className="mb-3 text-xs font-semibold text-gray-600">Hauptnische</div>
+                <div className="flex flex-wrap gap-2">
+                  {groups.map((g) => (
                     <button
+                      key={g}
                       type="button"
-                      onClick={clearNiches}
                       disabled={formLocked}
-                      className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-900 hover:bg-gray-50 disabled:opacity-50"
+                      onClick={() => setActiveGroup(g)}
+                      className={
+                        g === activeGroup
+                          ? "rounded-full bg-gray-950 px-4 py-2 text-xs font-semibold text-white"
+                          : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900"
+                      }
                     >
-                      Zurücksetzen
+                      {g}
                     </button>
-                  </div>
-                }
-              >
-                <div className="text-xs font-semibold text-gray-600">Hauptnische</div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {groups.map((g) => {
-                    const active = g === activeGroup;
-                    return (
-                      <button
-                        key={g}
-                        type="button"
-                        disabled={formLocked}
-                        onClick={() => setActiveGroup(g)}
-                        className={
-                          active
-                            ? "rounded-full bg-gray-950 px-4 py-2 text-xs font-semibold text-white"
-                            : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50 disabled:opacity-50"
-                        }
-                      >
-                        {g}
-                      </button>
-                    );
-                  })}
+                  ))}
                 </div>
 
                 <div className="mt-6 rounded-2xl border bg-[#fbfaf7] p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="text-xs font-semibold text-gray-600">
-                      Kampagnen-Fokus für {activeGroup}
-                    </div>
-                    <div className="text-xs text-gray-500">max. 5</div>
+                  <div className="text-xs font-semibold text-gray-600">
+                    Kampagnen-Fokus für {activeGroup} · {nichesHint}
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -937,9 +835,7 @@ export default function NewBriefPage() {
                           className={
                             selected
                               ? "rounded-full bg-gray-950 px-4 py-2 text-xs font-semibold text-white"
-                              : disabled
-                              ? "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-400 opacity-60"
-                              : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50"
+                              : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 disabled:opacity-50"
                           }
                         >
                           {n}
@@ -950,140 +846,62 @@ export default function NewBriefPage() {
                 </div>
               </Section>
 
-              <Section
-                eyebrow="Schritt 5"
-                title="Dateien"
-                subtitle="Optional. Lade Produktbilder, Beispielvideos, Guidelines oder weitere Unterlagen hoch."
-                icon={<Icon name="upload" />}
-                right={
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={formLocked}
-                    className="rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Dateien hinzufügen
-                  </button>
-                }
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => onPickFiles(e.target.files)}
-                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-                />
+              <Section eyebrow="Schritt 5" title="Dateien" icon={<Icon name="upload" />}>
+                <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => onPickFiles(e.target.files)} accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" />
 
-                <div className="rounded-2xl border bg-[#fbfaf7] p-4">
+                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={formLocked} className="rounded-full border bg-white px-4 py-2 text-xs font-semibold">
+                  Dateien hinzufügen
+                </button>
+
+                <div className="mt-4 rounded-2xl border bg-[#fbfaf7] p-4">
                   {files.length === 0 ? (
-                    <div className="text-sm text-gray-500">
-                      Keine Dateien ausgewählt.
-                    </div>
+                    <div className="text-sm text-gray-500">Keine Dateien ausgewählt.</div>
                   ) : (
                     <div className="space-y-2">
                       {files.map((f, idx) => (
-                        <div
-                          key={`${f.name}-${f.size}-${idx}`}
-                          className="flex items-center justify-between gap-4 rounded-xl border bg-white px-4 py-3"
-                        >
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-medium text-gray-900">{f.name}</div>
+                        <div key={`${f.name}-${f.size}-${idx}`} className="flex items-center justify-between gap-4 rounded-xl border bg-white px-4 py-3">
+                          <div>
+                            <div className="text-sm font-medium">{f.name}</div>
                             <div className="text-xs text-gray-500">{bytesToMb(f.size)}</div>
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() => removeFile(idx)}
-                            disabled={formLocked}
-                            className="rounded-full border px-3 py-1 text-xs font-semibold hover:bg-gray-50 disabled:opacity-50"
-                          >
+                          <button type="button" onClick={() => removeFile(idx)} disabled={formLocked} className="rounded-full border px-3 py-1 text-xs">
                             Entfernen
                           </button>
                         </div>
                       ))}
                     </div>
                   )}
-
-                  <p className="mt-3 text-xs text-gray-500">
-                    Max. 10 Dateien • bis zu 50 MB pro Datei
-                  </p>
                 </div>
               </Section>
 
-              <Section
-                eyebrow="Schritt 6"
-                title="Erstgespräch buchen"
-                subtitle="Das Erstgespräch ist erforderlich, damit wir die Kampagne prüfen und die passende Umsetzung vorbereiten können."
-                icon={<Icon name="calendar" />}
-              >
+              <Section eyebrow="Schritt 6" title="Erstgespräch buchen" subtitle="Das Erstgespräch ist erforderlich, damit wir die Kampagne prüfen können." icon={<Icon name="calendar" />}>
                 <div id="erstgespraech" />
 
                 {!draftBriefId ? (
                   <div className="rounded-3xl border bg-[#fbfaf7] p-6">
-                    <div className="text-sm font-semibold text-gray-950">
-                      Erstgespräch vorbereiten
-                    </div>
+                    <div className="text-sm font-semibold text-gray-950">Erstgespräch vorbereiten</div>
                     <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500">
-                      Klicke auf „Weiter zum Erstgespräch“. Deine Kampagne wird als Entwurf gespeichert
-                      und danach erscheint der Kalender direkt auf dieser Seite.
+                      Klicke auf „Weiter zum Erstgespräch“. Deine Kampagne wird als Entwurf gespeichert und danach erscheint der Kalender direkt auf dieser Seite.
                     </p>
 
-                    <button
-                      type="button"
-                      onClick={startBookingStep}
-                      disabled={!canCreateDraft}
-                      className="mt-5 rounded-full bg-gray-950 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50"
-                    >
-                      {savingDraft
-                        ? uploading
-                          ? "Dateien werden hochgeladen..."
-                          : "Kampagne wird vorbereitet..."
-                        : "Weiter zum Erstgespräch"}
+                    <button type="button" onClick={startBookingStep} disabled={!canCreateDraft} className="mt-5 rounded-full bg-gray-950 px-6 py-3 text-sm font-semibold text-white disabled:opacity-50">
+                      {savingDraft ? "Kampagne wird vorbereitet..." : "Weiter zum Erstgespräch"}
                     </button>
                   </div>
                 ) : (
                   <div className="space-y-5">
-                    <div
-                      className={
-                        consultationBooked
-                          ? "rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900"
-                          : "rounded-3xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900"
-                      }
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5">
-                          <Icon name={consultationBooked ? "check" : "calendar"} />
-                        </div>
-                        <div>
-                          <div className="font-semibold">
-                            {consultationBooked
-                              ? "Erstgespräch wurde bestätigt"
-                              : "Bitte Termin im Kalender auswählen"}
-                          </div>
-                          <div className="mt-1 leading-6">
-                            {consultationBooked
-                              ? `Der Termin wurde erfolgreich mit dieser Kampagne verknüpft${
-                                  consultationBookedAt
-                                    ? ` (${new Date(consultationBookedAt).toLocaleString("de-DE")})`
-                                    : ""
-                                }.`
-                              : "Nach der Buchung wird der Termin automatisch über Cal.com bestätigt. Das kann wenige Sekunden dauern."}
-                          </div>
-                        </div>
-                      </div>
+                    <div className={consultationBooked ? "rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900" : "rounded-3xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900"}>
+                      {consultationBooked
+                        ? "Erstgespräch wurde bestätigt."
+                        : "Bitte Termin im Kalender auswählen. Nach der Buchung wird der Termin automatisch bestätigt."}
                     </div>
 
                     <div className="overflow-hidden rounded-[28px] border bg-white">
                       <div id={calEmbedId} className="min-h-[760px] w-full" />
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => checkConsultationStatus(true)}
-                      disabled={checkingBooking || consultationBooked}
-                      className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50 disabled:opacity-50"
-                    >
+                    <button type="button" onClick={() => checkConsultationStatus(true)} disabled={checkingBooking || consultationBooked} className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold disabled:opacity-50">
                       {checkingBooking ? "Termin wird geprüft..." : "Terminstatus prüfen"}
                     </button>
                   </div>
@@ -1100,13 +918,7 @@ export default function NewBriefPage() {
                       : "Warte auf Terminbestätigung."}
                   </div>
 
-                  <button
-                    id="final-submit-button"
-                    type="button"
-                    onClick={onSubmit}
-                    disabled={!canSubmit}
-                    className="rounded-full bg-gray-950 px-8 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50"
-                  >
+                  <button id="final-submit-button" type="button" onClick={onSubmit} disabled={!canSubmit} className="rounded-full bg-gray-950 px-8 py-3 text-sm font-semibold text-white disabled:opacity-50">
                     {savingFinal ? "Kampagne wird eingereicht..." : "Kampagne einreichen"}
                   </button>
                 </div>
