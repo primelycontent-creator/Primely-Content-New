@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 
 const items = [
   { href: "/staff/dashboard", label: "Dashboard" },
-  { href: "/staff/briefs", label: "Briefings" },
-  { href: "/staff/creators", label: "Creators" },
+  { href: "/staff/briefs", label: "Kampagnen" },
+  { href: "/staff/creators", label: "Creator" },
   { href: "/staff/support", label: "Support" },
-  { href: "/settings", label: "Settings" },
+  { href: "/staff/settings", label: "Einstellungen" },
 ];
 
 function isActive(pathname: string | null, href: string) {
@@ -16,35 +16,55 @@ function isActive(pathname: string | null, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
+function IconDot({ active }: { active: boolean }) {
+  return (
+    <span
+      className={
+        active
+          ? "h-2 w-2 rounded-full bg-white"
+          : "h-2 w-2 rounded-full bg-transparent"
+      }
+    />
+  );
+}
+
 export default function StaffSidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="rounded-2xl border border-black/10 bg-white/60 p-4 shadow-sm backdrop-blur">
-      <div className="px-2 py-3">
-        <div className="text-[13px] tracking-wide text-black/50">Staff</div>
-        <div className="mt-1 text-xl font-semibold text-black">PrimelyContent</div>
+    <div className="sticky top-8 rounded-[28px] border bg-white/80 p-4 shadow-sm backdrop-blur">
+      <div className="px-3 py-4">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
+          Primely
+        </div>
+        <div className="mt-2 text-xl font-semibold tracking-tight text-gray-950">
+          Mitarbeiter
+        </div>
+        <p className="mt-2 text-xs leading-5 text-gray-500">
+          Kampagnen, Creator und Support verwalten.
+        </p>
       </div>
 
-      <div className="mt-3 space-y-1">
-        {items.map((it) => {
-          const active = isActive(pathname, it.href);
+      <nav className="mt-4 space-y-1">
+        {items.map((item) => {
+          const active = isActive(pathname, item.href);
+
           return (
             <Link
-              key={it.href}
-              href={it.href}
-              className={`flex items-center justify-between rounded-xl px-3 py-2 text-[15px] ${
+              key={item.href}
+              href={item.href}
+              className={
                 active
-                  ? "bg-black/5 text-black"
-                  : "text-black/70 hover:bg-black/5 hover:text-black"
-              }`}
+                  ? "flex items-center justify-between rounded-2xl bg-gray-950 px-4 py-3 text-sm font-semibold text-white shadow-sm"
+                  : "flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100 hover:text-gray-950"
+              }
             >
-              <span>{it.label}</span>
-              <span className={`h-2 w-2 rounded-full ${active ? "bg-black/60" : "bg-transparent"}`} />
+              <span>{item.label}</span>
+              <IconDot active={active} />
             </Link>
           );
         })}
-      </div>
+      </nav>
     </div>
   );
 }
