@@ -387,12 +387,27 @@ export default function CreatorProfilePage() {
     setEquipment((prev) => prev.filter((x) => x !== val));
   }
   async function getTokenAndUserId() {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    const userId = data.session?.user?.id;
-    if (!token || !userId) return null;
-    return { token, userId };
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
+  if (!token) return null;
+
+  const meRes = await fetch("/api/me", {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+
+  const { json, text } = await readSafeJson(meRes);
+
+  if (!meRes.ok || !json?.user?.id) {
+    throw new Error(json?.error ?? text.slice(0, 200) ?? "User konnte nicht geladen werden.");
   }
+
+  return {
+    token,
+    userId: String(json.user.id),
+  };
+}
   async function loadProfile() {
     const auth = await getTokenAndUserId();
 
