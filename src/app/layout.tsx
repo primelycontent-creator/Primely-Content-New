@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import NotificationBell from "@/components/NotificationBell";
 import LegalAcceptanceGate from "@/components/legal/LegalAcceptanceGate";
 import CookieBanner from "@/components/CookieBanner";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "Primely Content",
