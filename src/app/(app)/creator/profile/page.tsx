@@ -111,7 +111,8 @@ function bytesToMb(n?: number | null) {
   return `${(n / 1024 / 1024).toFixed(2)} MB`;
 }
 function publicAssetUrl(asset: { bucket: string; path: string }) {
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${asset.bucket}/${asset.path}`;
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  return `${base}/storage/v1/object/public/${asset.bucket}/${encodeURI(asset.path)}`;
 }
 async function readSafeJson(res: Response) {
   const text = await res.text();

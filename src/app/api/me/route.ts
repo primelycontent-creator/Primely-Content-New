@@ -69,10 +69,12 @@ export async function GET(req: Request) {
             equipment: true,
             price30sCents: true,
             introVideoAssetId: true,
+            profileImageAssetId: true,
             approvalStatus: true,
             approvedAt: true,
             approvedByUserId: true,
             rejectionReason: true,
+            
           },
         },
       },
