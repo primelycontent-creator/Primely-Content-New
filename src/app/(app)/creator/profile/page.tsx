@@ -1,7 +1,7 @@
 
 
 "use client";
-import Image from "next/image";
+
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
@@ -110,10 +110,7 @@ function bytesToMb(n?: number | null) {
   if (!n || n <= 0) return "";
   return `${(n / 1024 / 1024).toFixed(2)} MB`;
 }
-function publicAssetUrl(asset: { bucket: string; path: string }) {
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  return `${base}/storage/v1/object/public/${asset.bucket}/${encodeURI(asset.path)}`;
-}
+
 async function readSafeJson(res: Response) {
   const text = await res.text();
   try {
@@ -334,6 +331,7 @@ export default function CreatorProfilePage() {
   const [price30sEur, setPrice30sEur] = useState("");
   const [introAsset, setIntroAsset] = useState<IntroAsset | null>(null);
   const [profileImageAsset, setProfileImageAsset] = useState<ProfileImageAsset | null>(null);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [uploadingIntro, setUploadingIntro] = useState(false);
   const [uploadingProfileImage, setUploadingProfileImage] = useState(false);
   const introInputRef = useRef<HTMLInputElement | null>(null);
@@ -409,6 +407,38 @@ export default function CreatorProfilePage() {
     userId: String(json.user.id),
   };
 }
+async function loadProfileImageUrl(asset: ProfileImageAsset | null) {
+  if (!asset) {
+    setProfileImageUrl(null);
+    return;
+  }
+
+  const auth = await getTokenAndUserId();
+  if (!auth) {
+    setProfileImageUrl(null);
+    return;
+  }
+
+  const res = await fetch("/api/storage/signed-read", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${auth.token}`,
+    },
+    body: JSON.stringify({
+      bucket: asset.bucket,
+      path: asset.path,
+    }),
+  });
+
+  const { json } = await readSafeJson(res);
+
+  if (res.ok && json?.signedUrl) {
+    setProfileImageUrl(json.signedUrl);
+  } else {
+    setProfileImageUrl(null);
+  }
+}
   async function loadProfile() {
     const auth = await getTokenAndUserId();
 
@@ -456,7 +486,12 @@ export default function CreatorProfilePage() {
     setPrice30sEur(p.price30sCents != null ? String(p.price30sCents / 100) : "");
 
     setIntroAsset(p.introVideoAsset ?? null);
-    setProfileImageAsset(p.profileImageAsset ?? null);
+    
+    const nextProfileImage = p.profileImageAsset ?? null;
+setProfileImageAsset(nextProfileImage);
+await loadProfileImageUrl(nextProfileImage);
+
+
   }
 
   useEffect(() => {
@@ -594,7 +629,10 @@ export default function CreatorProfilePage() {
     if (!res.ok) throw new Error(json?.error ?? text.slice(0, 200));
 
     const asset = json?.asset as ProfileImageAsset | undefined;
-    if (asset) setProfileImageAsset(asset);
+    if (asset) {
+  setProfileImageAsset(asset);
+  await loadProfileImageUrl(asset);
+}
   }
 
   async function onPickIntroVideo(file: File | null) {
@@ -772,15 +810,13 @@ export default function CreatorProfilePage() {
                 onChange={(e) => onPickProfileImage(e.target.files?.[0] ?? null)}
               />
 
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+              <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center">
                 <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-[28px] border bg-[#f3eee7]">
-                  {profileImageAsset ? (
-                    <Image
-                      src={publicAssetUrl(profileImageAsset)}
+                  {profileImageAsset && profileImageUrl ? (
+                    <img
+                      src={profileImageUrl}
                       alt="Profilbild"
-                      fill
-                      className="object-cover"
-                      unoptimized
+                      className="h-full w-full object-cover"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-3xl font-semibold text-gray-400">
@@ -788,7 +824,6 @@ export default function CreatorProfilePage() {
                     </div>
                   )}
                 </div>
-
                 <div className="min-w-0 flex-1">
                   <button
                     type="button"
