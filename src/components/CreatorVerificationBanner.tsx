@@ -11,17 +11,17 @@ export default function CreatorVerificationBanner({
   approvalStatus,
   rejectionReason,
 }: Props) {
-  if (emailConfirmed && approvalStatus === "APPROVED") {
-    return null;
-  }
-
   if (!emailConfirmed) {
     return (
-      <div className="mb-6 rounded-3xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
-        <div className="text-sm font-semibold">Please confirm your email</div>
-        <p className="mt-2 text-sm">
-          Your creator account is not verified yet. Please confirm your email first.
-          After that, our staff team will review and approve your profile before you can be assigned to campaigns.
+      <div className="mb-6 rounded-[28px] border border-amber-200 bg-amber-50 p-6">
+        <div className="text-sm font-semibold text-amber-900">
+          E-Mail-Adresse bestätigen
+        </div>
+
+        <p className="mt-2 text-sm leading-6 text-amber-800">
+          Bitte bestätige zuerst deine E-Mail-Adresse. Danach kannst du dein
+          Creator-Profil vervollständigen und für Kampagnen freigeschaltet
+          werden.
         </p>
       </div>
     );
@@ -29,27 +29,56 @@ export default function CreatorVerificationBanner({
 
   if (approvalStatus === "REJECTED") {
     return (
-      <div className="mb-6 rounded-3xl border border-rose-200 bg-rose-50 p-5 text-rose-900">
-        <div className="text-sm font-semibold">Your creator profile was not approved yet</div>
-        <p className="mt-2 text-sm">
-          Please review your profile details and update missing information if needed.
+      <div className="mb-6 rounded-[28px] border border-rose-200 bg-rose-50 p-6">
+        <div className="text-sm font-semibold text-rose-900">
+          Profil benötigt Anpassungen
+        </div>
+
+        <p className="mt-2 text-sm leading-6 text-rose-800">
+          Damit wir dein Profil freigeben können, fehlen noch einige
+          Informationen oder Angaben müssen angepasst werden.
         </p>
+
         {rejectionReason ? (
-          <div className="mt-3 rounded-2xl border border-rose-200 bg-white/70 p-4 text-sm">
-            <div className="font-semibold">Staff note</div>
-            <div className="mt-1 whitespace-pre-wrap">{rejectionReason}</div>
+          <div className="mt-4 rounded-2xl border border-rose-200 bg-white p-4">
+            <div className="font-semibold text-rose-900">
+              Feedback vom Primely-Team
+            </div>
+
+            <div className="mt-2 whitespace-pre-wrap text-sm text-gray-700">
+              {rejectionReason}
+            </div>
           </div>
         ) : null}
       </div>
     );
   }
 
+  if (approvalStatus === "APPROVED") {
+    return (
+      <div className="mb-6 rounded-[28px] border border-emerald-200 bg-emerald-50 p-6">
+        <div className="text-sm font-semibold text-emerald-900">
+          Profil freigegeben ✓
+        </div>
+
+        <p className="mt-2 text-sm leading-6 text-emerald-800">
+          Dein Creator-Profil wurde erfolgreich freigegeben. Du kannst jetzt
+          Kampagnen erhalten und mit Brands zusammenarbeiten.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="mb-6 rounded-3xl border border-blue-200 bg-blue-50 p-5 text-blue-900">
-      <div className="text-sm font-semibold">Your account is under review</div>
-      <p className="mt-2 text-sm">
-        Your email is confirmed. Our staff team is currently reviewing your creator profile.
-        You can already complete your profile and get everything ready, but campaign assignment will start after approval.
+    <div className="mb-6 rounded-[28px] border border-blue-200 bg-blue-50 p-6">
+      <div className="text-sm font-semibold text-blue-900">
+        Creator-Profil wird geprüft
+      </div>
+
+      <p className="mt-2 text-sm leading-6 text-blue-800">
+        Dein Profil wurde erfolgreich eingereicht und wird aktuell von unserem
+        Team geprüft. Nach der Freigabe kannst du Kampagnen erhalten und an
+        Projekten teilnehmen.
       </p>
     </div>
   );
