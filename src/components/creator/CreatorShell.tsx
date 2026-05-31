@@ -4,13 +4,23 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import {
+  LayoutDashboard,
+  Upload,
+  LifeBuoy,
+  User,
+  Settings,
+  LogOut,
+} from "lucide-react";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-type Me = { ok: true; user: { role: "BRAND" | "CREATOR" | "STAFF"; email: string } } | { error: string };
+type Me =
+  | { ok: true; user: { role: "BRAND" | "CREATOR" | "STAFF"; email: string } }
+  | { error: string };
 
 export default function CreatorShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -21,11 +31,11 @@ export default function CreatorShell({ children }: { children: React.ReactNode }
 
   const nav = useMemo(
     () => [
-      { href: "/creator/dashboard", label: "Dashboard" },
-      { href: "/creator/profile", label: "Profile" },
-      { href: "/creator/uploads", label: "Uploads" },
-      { href: "/creator/support", label: "Support" },
-      { href: "/creator/settings", label: "Settings" },
+      { href: "/creator/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/creator/briefs", label: "Briefings", icon: Upload },
+      { href: "/creator/profile", label: "Creator-Profil", icon: User },
+      { href: "/creator/support", label: "Support", icon: LifeBuoy },
+      { href: "/creator/settings", label: "Einstellungen", icon: Settings },
     ],
     []
   );
@@ -44,16 +54,21 @@ export default function CreatorShell({ children }: { children: React.ReactNode }
         return;
       }
 
-      const res = await fetch("/api/me", { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch("/api/me", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+
       const json = (await res.json()) as Me;
 
       if (!alive) return;
 
       if ("ok" in json && json.ok) {
         if (json.user.role !== "CREATOR") {
-          router.push("/"); // oder role-based redirect
+          router.push("/");
           return;
         }
+
         setEmail(json.user.email);
       } else {
         router.push("/login?next=/creator/dashboard");
@@ -64,6 +79,7 @@ export default function CreatorShell({ children }: { children: React.ReactNode }
     }
 
     load();
+
     return () => {
       alive = false;
     };
@@ -76,58 +92,53 @@ export default function CreatorShell({ children }: { children: React.ReactNode }
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F1EA] text-gray-900">
-      <div className="mx-auto max-w-6xl px-6 py-10">
-        <div className="mb-8 flex items-start justify-between gap-6">
-          <div>
-            <div className="text-[11px] font-semibold tracking-wide text-gray-600">CREATOR AREA</div>
-            <h1 className="mt-2 font-serif text-5xl leading-[0.95] tracking-tight">
-              Creator Dashboard
-            </h1>
-            <p className="mt-3 text-sm text-gray-600">
-              Manage your profile, upload deliverables, and track assigned briefings.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onLogout}
-              className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold hover:bg-gray-50"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
-          <aside className="rounded-3xl border bg-white/70 p-4 shadow-sm">
-            <div className="px-3 pb-3 text-xs font-semibold text-gray-600">
-              {loading ? "Loading..." : email ?? "—"}
+    <div className="min-h-screen bg-[#fbfaf7] text-gray-950">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+          <aside className="h-fit rounded-[28px] border bg-white/80 p-5 shadow-sm">
+            <div className="mb-6">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
+                Creator
+              </div>
+              <div className="mt-2 truncate text-sm font-medium text-gray-700">
+                {loading ? "Wird geladen..." : email ?? "—"}
+              </div>
             </div>
 
-            <div className="space-y-1">
-              {nav.map((i) => {
-                const active = pathname?.startsWith(i.href);
+            <nav className="space-y-2">
+              {nav.map((item) => {
+                const active =
+                  pathname === item.href || pathname?.startsWith(item.href + "/");
+                const Icon = item.icon;
+
                 return (
                   <Link
-                    key={i.href}
-                    href={i.href}
+                    key={item.href}
+                    href={item.href}
                     className={
                       active
-                        ? "block rounded-2xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white"
-                        : "block rounded-2xl px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-black/5"
+                        ? "flex items-center gap-3 rounded-2xl bg-gray-950 px-4 py-3 text-sm font-semibold text-white shadow-sm"
+                        : "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-gray-800 hover:bg-black/5"
                     }
                   >
-                    {i.label}
+                    <Icon className="h-5 w-5" />
+                    {item.label}
                   </Link>
                 );
               })}
-            </div>
+            </nav>
+
+            <button
+              type="button"
+              onClick={onLogout}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border bg-white px-4 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+            >
+              <LogOut className="h-5 w-5" />
+              Abmelden
+            </button>
           </aside>
 
-          <main className="rounded-3xl border bg-white/70 p-6 shadow-sm">
-            {children}
-          </main>
+          <main>{children}</main>
         </div>
       </div>
     </div>
