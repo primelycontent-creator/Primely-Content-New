@@ -38,12 +38,17 @@ async function getAuthedStaff(req: Request) {
 
 function parseStatus(raw: string | null): BriefStatus | "ALL" {
   if (!raw) return "ALL";
+
   const s = raw.toUpperCase().trim();
+
   if (s === "ALL") return "ALL";
   if (s === "DRAFT") return BriefStatus.DRAFT;
   if (s === "SUBMITTED") return BriefStatus.SUBMITTED;
+  if (s === "REVIEW") return BriefStatus.REVIEW;
   if (s === "IN_PROGRESS") return BriefStatus.IN_PROGRESS;
+  if (s === "DONE") return BriefStatus.DONE;
   if (s === "DECLINED") return BriefStatus.DECLINED;
+
   return "ALL";
 }
 
