@@ -23,61 +23,20 @@ const LICENSE_OPTIONS = [
 
 type LicenseLabel = (typeof LICENSE_OPTIONS)[number];
 
-const NICHE_GROUPS = {
-  "Beauty & Skincare": ["Hautpflege", "Make-up", "Anti-Aging", "Naturkosmetik"],
-  "Fitness & Gesundheit": [
-    "Supplements",
-    "Home Workouts",
-    "Fitness-Programme",
-    "Abnehmprodukte",
-    "Biohacking",
-  ],
-  Fashion: ["Streetwear", "Sportbekleidung", "Schmuck", "Taschen", "Sneaker"],
-  "Tech & Gadgets": [
-    "Smartphones & Zubehör",
-    "Gimbals",
-    "Kameras",
-    "Smartwatches",
-    "KI-Tools & Apps",
-  ],
-  "Home & Living": [
-    "Einrichtung",
-    "Küchengadgets",
-    "Haushaltshelfer",
-    "DIY-Produkte",
-    "Dekoration",
-  ],
-  "Food & Getränke": [
-    "Proteinprodukte",
-    "Kaffee-Marken",
-    "Energy Drinks",
-    "Süßigkeiten",
-    "Kochboxen",
-  ],
-  "Persönlichkeitsentwicklung & Coaching": [
-    "Online-Kurse",
-    "Trading",
-    "Mindset",
-    "Dating-Coaching",
-    "Business-Coaching",
-  ],
-  "Finanzen & Versicherungen": [
-    "Investment-Apps",
-    "Kryptowährungen",
-    "Versicherungen",
-    "Kreditkarten",
-  ],
-  Haustiere: ["Hundefutter", "Katzenzubehör", "Spielzeug", "Pflegeprodukte"],
-  "Reisen & Lifestyle": [
-    "Reisegadgets",
-    "Hotels",
-    "Koffer",
-    "Camper",
-    "Auslandsversicherungen",
-  ],
-} as const;
+const NICHE_GROUPS = [
+  "Beauty & Skincare",
+  "Fitness & Gesundheit",
+  "Fashion",
+  "Tech & Gadgets",
+  "Home & Living",
+  "Food & Getränke",
+  "Persönlichkeitsentwicklung & Coaching",
+  "Finanzen & Versicherungen",
+  "Haustiere",
+  "Reisen & Lifestyle",
+] as const;
 
-type NicheGroup = keyof typeof NICHE_GROUPS;
+type NicheGroup = (typeof NICHE_GROUPS)[number];
 
 type BrandProfile = {
   companyName?: string | null;
@@ -125,7 +84,9 @@ function mapLicenseToApi(value: LicenseLabel) {
   return "UNLIMITED";
 }
 
-function Icon(props: { name: "file" | "calendar" | "upload" | "check" | "brief" | "target" | "info" }) {
+function Icon(props: {
+  name: "file" | "calendar" | "upload" | "check" | "brief" | "target" | "info";
+}) {
   const common = "h-5 w-5";
 
   if (props.name === "calendar") {
@@ -306,10 +267,9 @@ export default function NewBriefPage() {
   const [deliverableCount, setDeliverableCount] = useState<number>(1);
   const [description, setDescription] = useState("");
 
-  const groups = Object.keys(NICHE_GROUPS) as NicheGroup[];
+  const groups = NICHE_GROUPS;
   const [activeGroup, setActiveGroup] = useState<NicheGroup>(groups[0]);
-  const [selectedNiches, setSelectedNiches] = useState<string[]>([]);
-  const activeSubs = NICHE_GROUPS[activeGroup];
+  const [subNiche, setSubNiche] = useState("");
 
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -332,9 +292,6 @@ export default function NewBriefPage() {
   const canSubmit = useMemo(() => {
     return Boolean(draftBriefId && consultationBooked && !savingFinal && !uploading);
   }, [draftBriefId, consultationBooked, savingFinal, uploading]);
-
-  const nichesHint = useMemo(() => `${selectedNiches.length}/5 ausgewählt`, [selectedNiches.length]);
-
   useEffect(() => {
     async function loadProfile() {
       try {
@@ -448,21 +405,6 @@ export default function NewBriefPage() {
     return { token, userId };
   }
 
-  function toggleNiche(n: string) {
-    if (formLocked) return;
-
-    setSelectedNiches((prev) => {
-      if (prev.includes(n)) return prev.filter((x) => x !== n);
-      if (prev.length >= 5) return prev;
-      return [...prev, n];
-    });
-  }
-
-  function clearNiches() {
-    if (formLocked) return;
-    setSelectedNiches([]);
-  }
-
   function onPickFiles(list: FileList | null) {
     if (!list || formLocked) return;
     setFiles((prev) => mergeUniqueFiles(prev, Array.from(list), 10));
@@ -489,7 +431,7 @@ export default function NewBriefPage() {
         licenseTerm: mapLicenseToApi(licenseTerm),
         deliverableCount,
         nicheGroup: activeGroup,
-        niches: selectedNiches.slice(0, 5),
+        niches: subNiche.trim() ? [subNiche.trim()] : [],
         companyName: companyName.trim() || null,
         contactName: contactName.trim() || null,
         contactEmail: contactEmail.trim() || null,
@@ -701,17 +643,11 @@ export default function NewBriefPage() {
       <div className="min-h-screen bg-[#fbfaf7] px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <div className="mb-6 flex items-center justify-between">
-            <Link
-              href="/brand/dashboard"
-              className="inline-flex items-center gap-2 rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50"
-            >
+            <Link href="/brand/dashboard" className="inline-flex items-center gap-2 rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50">
               ← Zurück
             </Link>
 
-            <Link
-              href="/brand/support"
-              className="hidden rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50 sm:inline-flex"
-            >
+            <Link href="/brand/support" className="hidden rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50 sm:inline-flex">
               Support
             </Link>
           </div>
@@ -753,12 +689,7 @@ export default function NewBriefPage() {
 
               <Section eyebrow="Schritt 2" title="Kampagnendaten" icon={<Icon name="file" />}>
                 <div className="grid gap-5">
-                  <Input
-                    disabled={formLocked}
-                    placeholder="Kampagnen-Titel"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
+                  <Input disabled={formLocked} placeholder="Kampagnen-Titel" value={title} onChange={(e) => setTitle(e.target.value)} />
 
                   <div className="grid gap-4 md:grid-cols-3">
                     <select value={deadline} disabled={formLocked} onChange={(e) => setDeadline(e.target.value)} className="rounded-2xl border bg-white px-4 py-3 text-sm">
@@ -796,8 +727,9 @@ export default function NewBriefPage() {
                 />
               </Section>
 
-              <Section eyebrow="Schritt 4" title="Ziel-Nischen" icon={<Icon name="target" />}>
+              <Section eyebrow="Schritt 4" title="Ziel-Nische" subtitle="Wähle eine Hauptnische und beschreibe frei, welche Art Creator, Themen oder Produkte besonders gut zur Kampagne passen." icon={<Icon name="target" />}>
                 <div className="mb-3 text-xs font-semibold text-gray-600">Hauptnische</div>
+
                 <div className="flex flex-wrap gap-2">
                   {groups.map((g) => (
                     <button
@@ -808,7 +740,7 @@ export default function NewBriefPage() {
                       className={
                         g === activeGroup
                           ? "rounded-full bg-gray-950 px-4 py-2 text-xs font-semibold text-white"
-                          : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900"
+                          : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50 disabled:opacity-50"
                       }
                     >
                       {g}
@@ -816,32 +748,22 @@ export default function NewBriefPage() {
                   ))}
                 </div>
 
-                <div className="mt-6 rounded-2xl border bg-[#fbfaf7] p-4">
-                  <div className="text-xs font-semibold text-gray-600">
-                    Kampagnen-Fokus für {activeGroup} · {nichesHint}
-                  </div>
+                <div className="mt-6">
+                  <div className="text-sm font-medium text-gray-700">Unter-Nische / Kampagnen-Fokus</div>
+                  <p className="mt-2 text-xs leading-5 text-gray-500">
+                    Beschreibe möglichst genau, welche Creator-Art, Produktbereiche oder Content-Themen zur Kampagne passen.
+                  </p>
 
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {activeSubs.map((n) => {
-                      const selected = selectedNiches.includes(n);
-                      const disabled = (!selected && selectedNiches.length >= 5) || formLocked;
+                  <Textarea
+                    disabled={formLocked}
+                    className="mt-3 min-h-[150px]"
+                    value={subNiche}
+                    onChange={(e) => setSubNiche(e.target.value)}
+                    placeholder={`z. B.\n\nSkincare Routinen, Gym & Supplements, Luxury Hotel Content, Streetwear Try-ons, Smart Home Gadgets, Haustierprodukte, Kaffee & Barista, Gaming Setup, Outdoor Camping`}
+                  />
 
-                      return (
-                        <button
-                          key={n}
-                          type="button"
-                          onClick={() => toggleNiche(n)}
-                          disabled={disabled}
-                          className={
-                            selected
-                              ? "rounded-full bg-gray-950 px-4 py-2 text-xs font-semibold text-white"
-                              : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 disabled:opacity-50"
-                          }
-                        >
-                          {n}
-                        </button>
-                      );
-                    })}
+                  <div className="mt-3 rounded-2xl border bg-[#fbfaf7] p-4 text-xs leading-5 text-gray-500">
+                    Tipp: Je genauer du den Kampagnen-Fokus beschreibst, desto besser kann unser Team passende Creator auswählen.
                   </div>
                 </div>
               </Section>
