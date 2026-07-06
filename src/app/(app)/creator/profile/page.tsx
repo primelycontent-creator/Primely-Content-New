@@ -1,14 +1,14 @@
-
-
 "use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
 const NICHE_GROUPS = {
   "Beauty & Skincare": ["Hautpflege", "Make-up", "Anti-Aging", "Naturkosmetik"],
   "Fitness & Gesundheit": [
@@ -62,8 +62,10 @@ const NICHE_GROUPS = {
     "Auslandsversicherungen",
   ],
 } as const;
+
 type NicheGroup = keyof typeof NICHE_GROUPS;
-type IntroAsset = {
+
+type Asset = {
   id: string;
   bucket: string;
   path: string;
@@ -72,15 +74,7 @@ type IntroAsset = {
   sizeBytes?: number | null;
   createdAt: string;
 };
-type ProfileImageAsset = {
-  id: string;
-  bucket: string;
-  path: string;
-  fileName?: string | null;
-  mimeType?: string | null;
-  sizeBytes?: number | null;
-  createdAt: string;
-};
+
 type CreatorProfileDto = {
   id: string;
   userId: string;
@@ -100,25 +94,29 @@ type CreatorProfileDto = {
   tiktok?: string | null;
   equipment: string[];
   price30sCents?: number | null;
-  introVideoAsset?: IntroAsset | null;
-  profileImageAsset?: ProfileImageAsset | null;
+  introVideoAsset?: Asset | null;
+  profileImageAsset?: Asset | null;
 };
-function safeFileName(name: string) {
-  return name.trim().replace(/\s+/g, "-").replace(/[^a-zA-Z0-9._-]/g, "");
-}
-function bytesToMb(n?: number | null) {
-  if (!n || n <= 0) return "";
-  return `${(n / 1024 / 1024).toFixed(2)} MB`;
-}
 
 async function readSafeJson(res: Response) {
   const text = await res.text();
+
   try {
     return { json: JSON.parse(text), text };
   } catch {
     return { json: null, text };
   }
 }
+
+function safeFileName(name: string) {
+  return name.trim().replace(/\s+/g, "-").replace(/[^a-zA-Z0-9._-]/g, "");
+}
+
+function bytesToMb(n?: number | null) {
+  if (!n || n <= 0) return "";
+  return `${(n / 1024 / 1024).toFixed(2)} MB`;
+}
+
 function Icon(props: {
   name:
     | "user"
@@ -135,6 +133,7 @@ function Icon(props: {
     | "chevron";
 }) {
   const common = "h-5 w-5";
+
   if (props.name === "user") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -143,6 +142,7 @@ function Icon(props: {
       </svg>
     );
   }
+
   if (props.name === "video") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -151,6 +151,7 @@ function Icon(props: {
       </svg>
     );
   }
+
   if (props.name === "image") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -160,6 +161,7 @@ function Icon(props: {
       </svg>
     );
   }
+
   if (props.name === "target") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -169,6 +171,7 @@ function Icon(props: {
       </svg>
     );
   }
+
   if (props.name === "link") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -177,6 +180,7 @@ function Icon(props: {
       </svg>
     );
   }
+
   if (props.name === "camera") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -185,6 +189,7 @@ function Icon(props: {
       </svg>
     );
   }
+
   if (props.name === "location") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -193,6 +198,7 @@ function Icon(props: {
       </svg>
     );
   }
+
   if (props.name === "check") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -200,6 +206,7 @@ function Icon(props: {
       </svg>
     );
   }
+
   if (props.name === "upload") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -209,6 +216,7 @@ function Icon(props: {
       </svg>
     );
   }
+
   if (props.name === "save") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -218,6 +226,7 @@ function Icon(props: {
       </svg>
     );
   }
+
   if (props.name === "support") {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -227,12 +236,14 @@ function Icon(props: {
       </svg>
     );
   }
+
   return (
     <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="m9 18 6-6-6-6" />
     </svg>
   );
 }
+
 function Card(props: {
   title: string;
   subtitle?: string;
@@ -250,26 +261,27 @@ function Card(props: {
               {props.icon}
             </div>
           ) : null}
+
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-gray-950">
-              {props.title}
-            </h2>
+            <h2 className="text-lg font-semibold tracking-tight text-gray-950">{props.title}</h2>
             {props.subtitle ? (
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-500">
-                {props.subtitle}
-              </p>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-500">{props.subtitle}</p>
             ) : null}
           </div>
         </div>
+
         {props.right ? <div className="shrink-0">{props.right}</div> : null}
       </div>
+
       <div className="mt-6">{props.children}</div>
     </section>
   );
 }
+
 function Label(props: { children: React.ReactNode }) {
   return <label className="text-sm font-medium text-gray-700">{props.children}</label>;
 }
+
 function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
@@ -281,6 +293,7 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
     />
   );
 }
+
 function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
@@ -292,6 +305,7 @@ function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
     />
   );
 }
+
 function CompletionItem(props: { done: boolean; label: string }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3">
@@ -308,51 +322,71 @@ function CompletionItem(props: { done: boolean; label: string }) {
     </div>
   );
 }
+
 export default function CreatorProfilePage() {
   const groups = Object.keys(NICHE_GROUPS) as NicheGroup[];
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [country, setCountry] = useState("");
+
   const [workMode, setWorkMode] = useState<"FULL_TIME" | "PART_TIME" | "">("");
   const [nicheGroup, setNicheGroup] = useState<NicheGroup | "">(groups[0] ?? "");
   const [niches, setNiches] = useState<string[]>([]);
+
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [bio, setBio] = useState("");
   const [instagram, setInstagram] = useState("");
   const [tiktok, setTiktok] = useState("");
+
   const [equipment, setEquipment] = useState<string[]>([]);
   const [equipmentInput, setEquipmentInput] = useState("");
   const [price30sEur, setPrice30sEur] = useState("");
-  const [introAsset, setIntroAsset] = useState<IntroAsset | null>(null);
-  const [profileImageAsset, setProfileImageAsset] = useState<ProfileImageAsset | null>(null);
+
+  const [introAsset, setIntroAsset] = useState<Asset | null>(null);
+  const [profileImageAsset, setProfileImageAsset] = useState<Asset | null>(null);
+
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [introVideoUrl, setIntroVideoUrl] = useState<string | null>(null);
+
   const [uploadingIntro, setUploadingIntro] = useState(false);
   const [uploadingProfileImage, setUploadingProfileImage] = useState(false);
+
   const introInputRef = useRef<HTMLInputElement | null>(null);
   const profileImageInputRef = useRef<HTMLInputElement | null>(null);
+
   const activeSubs = useMemo(() => {
     if (!nicheGroup) return [];
     return NICHE_GROUPS[nicheGroup];
   }, [nicheGroup]);
+
   const completion = useMemo(() => {
     const checks = [
       { key: "profileImage", label: "Profilbild", done: !!profileImageAsset },
       { key: "intro", label: "Intro-Video", done: !!introAsset },
       { key: "basic", label: "Grunddaten", done: !!fullName.trim() && !!phone.trim() && !!workMode },
       { key: "niches", label: "Nischen", done: !!nicheGroup && niches.length > 0 },
-      { key: "socials", label: "Portfolio / Socials", done: !!portfolioUrl.trim() || !!instagram.trim() || !!tiktok.trim() },
+      {
+        key: "socials",
+        label: "Portfolio / Socials",
+        done: !!portfolioUrl.trim() || !!instagram.trim() || !!tiktok.trim(),
+      },
       { key: "price", label: "Preisangabe", done: !!price30sEur.trim() },
       { key: "equipment", label: "Equipment", done: equipment.length > 0 },
       { key: "bio", label: "Bio", done: !!bio.trim() },
     ];
+
     const done = checks.filter((x) => x.done).length;
     const percent = Math.round((done / checks.length) * 100);
+
     return { checks, percent };
   }, [
     profileImageAsset,
@@ -369,76 +403,57 @@ export default function CreatorProfilePage() {
     equipment.length,
     bio,
   ]);
-  function toggleNiche(n: string) {
-    setNiches((prev) => {
-      if (prev.includes(n)) return prev.filter((x) => x !== n);
-      if (prev.length >= 5) return prev;
-      return [...prev, n];
-    });
-  }
-  function addEquipmentChip() {
-    const s = equipmentInput.trim();
-    if (!s) return;
-    setEquipment((prev) => Array.from(new Set([...prev, s])).slice(0, 30));
-    setEquipmentInput("");
-  }
-  function removeEquipmentChip(val: string) {
-    setEquipment((prev) => prev.filter((x) => x !== val));
-  }
+
   async function getTokenAndUserId() {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
 
-  if (!token) return null;
+    if (!token) return null;
 
-  const meRes = await fetch("/api/me", {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
+    const meRes = await fetch("/api/me", {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
 
-  const { json, text } = await readSafeJson(meRes);
+    const { json, text } = await readSafeJson(meRes);
 
-  if (!meRes.ok || !json?.user?.id) {
-    throw new Error(json?.error ?? text.slice(0, 200) ?? "User konnte nicht geladen werden.");
+    if (!meRes.ok || !json?.user?.id) {
+      throw new Error(json?.error ?? text.slice(0, 200) ?? "User konnte nicht geladen werden.");
+    }
+
+    return {
+      token,
+      userId: String(json.user.id),
+    };
   }
 
-  return {
-    token,
-    userId: String(json.user.id),
-  };
-}
-async function loadProfileImageUrl(asset: ProfileImageAsset | null) {
-  if (!asset) {
-    setProfileImageUrl(null);
-    return;
+  async function loadSignedUrl(asset: Asset | null) {
+    if (!asset) return null;
+
+    const auth = await getTokenAndUserId();
+    if (!auth) return null;
+
+    const res = await fetch("/api/storage/signed-read", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${auth.token}`,
+      },
+      body: JSON.stringify({
+        bucket: asset.bucket,
+        path: asset.path,
+      }),
+    });
+
+    const { json } = await readSafeJson(res);
+
+    if (res.ok && json?.signedUrl) {
+      return String(json.signedUrl);
+    }
+
+    return null;
   }
 
-  const auth = await getTokenAndUserId();
-  if (!auth) {
-    setProfileImageUrl(null);
-    return;
-  }
-
-  const res = await fetch("/api/storage/signed-read", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${auth.token}`,
-    },
-    body: JSON.stringify({
-      bucket: asset.bucket,
-      path: asset.path,
-    }),
-  });
-
-  const { json } = await readSafeJson(res);
-
-  if (res.ok && json?.signedUrl) {
-    setProfileImageUrl(json.signedUrl);
-  } else {
-    setProfileImageUrl(null);
-  }
-}
   async function loadProfile() {
     const auth = await getTokenAndUserId();
 
@@ -485,13 +500,19 @@ async function loadProfileImageUrl(asset: ProfileImageAsset | null) {
     setEquipment(Array.isArray(p.equipment) ? p.equipment : []);
     setPrice30sEur(p.price30sCents != null ? String(p.price30sCents / 100) : "");
 
-    setIntroAsset(p.introVideoAsset ?? null);
-    
     const nextProfileImage = p.profileImageAsset ?? null;
-setProfileImageAsset(nextProfileImage);
-await loadProfileImageUrl(nextProfileImage);
+    const nextIntro = p.introVideoAsset ?? null;
 
+    setProfileImageAsset(nextProfileImage);
+    setIntroAsset(nextIntro);
 
+    const [imageUrl, videoUrl] = await Promise.all([
+      loadSignedUrl(nextProfileImage),
+      loadSignedUrl(nextIntro),
+    ]);
+
+    setProfileImageUrl(imageUrl);
+    setIntroVideoUrl(videoUrl);
   }
 
   useEffect(() => {
@@ -509,6 +530,26 @@ await loadProfileImageUrl(nextProfileImage);
     run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function toggleNiche(n: string) {
+    setNiches((prev) => {
+      if (prev.includes(n)) return prev.filter((x) => x !== n);
+      if (prev.length >= 5) return prev;
+      return [...prev, n];
+    });
+  }
+
+  function addEquipmentChip() {
+    const s = equipmentInput.trim();
+    if (!s) return;
+
+    setEquipment((prev) => Array.from(new Set([...prev, s])).slice(0, 30));
+    setEquipmentInput("");
+  }
+
+  function removeEquipmentChip(val: string) {
+    setEquipment((prev) => prev.filter((x) => x !== val));
+  }
 
   async function onSave() {
     try {
@@ -602,8 +643,12 @@ await loadProfileImageUrl(nextProfileImage);
     const { json, text } = await readSafeJson(res);
     if (!res.ok) throw new Error(json?.error ?? text.slice(0, 200));
 
-    const asset = json?.asset as IntroAsset | undefined;
-    if (asset) setIntroAsset(asset);
+    const asset = json?.asset as Asset | undefined;
+
+    if (asset) {
+      setIntroAsset(asset);
+      setIntroVideoUrl(await loadSignedUrl(asset));
+    }
   }
 
   async function attachProfileImage(
@@ -628,11 +673,12 @@ await loadProfileImageUrl(nextProfileImage);
     const { json, text } = await readSafeJson(res);
     if (!res.ok) throw new Error(json?.error ?? text.slice(0, 200));
 
-    const asset = json?.asset as ProfileImageAsset | undefined;
+    const asset = json?.asset as Asset | undefined;
+
     if (asset) {
-  setProfileImageAsset(asset);
-  await loadProfileImageUrl(asset);
-}
+      setProfileImageAsset(asset);
+      setProfileImageUrl(await loadSignedUrl(asset));
+    }
   }
 
   async function onPickIntroVideo(file: File | null) {
@@ -653,9 +699,7 @@ await loadProfileImageUrl(nextProfileImage);
       }
 
       const bucket = "ugc";
-      const path = `users/${auth.userId}/creator/intro/${crypto.randomUUID()}-${safeFileName(
-        file.name
-      )}`;
+      const path = `users/${auth.userId}/creator/intro/${crypto.randomUUID()}-${safeFileName(file.name)}`;
 
       const presign = await presignUpload(auth.token, bucket, path);
 
@@ -699,9 +743,7 @@ await loadProfileImageUrl(nextProfileImage);
       }
 
       const bucket = "ugc";
-      const path = `users/${auth.userId}/creator/profile-image/${crypto.randomUUID()}-${safeFileName(
-        file.name
-      )}`;
+      const path = `users/${auth.userId}/creator/profile-image/${crypto.randomUUID()}-${safeFileName(file.name)}`;
 
       const presign = await presignUpload(auth.token, bucket, path);
 
@@ -726,7 +768,6 @@ await loadProfileImageUrl(nextProfileImage);
       setUploadingProfileImage(false);
     }
   }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-[#fbfaf7] px-4 py-6 sm:p-8">
@@ -773,12 +814,16 @@ await loadProfileImageUrl(nextProfileImage);
             <div className="rounded-[28px] border bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-semibold text-gray-950">Profilvollständigkeit</div>
+                  <div className="text-sm font-semibold text-gray-950">
+                    Profilvollständigkeit
+                  </div>
                   <div className="mt-1 text-xs text-gray-500">
                     Für internes Matching und Freigabe
                   </div>
                 </div>
-                <div className="text-3xl font-semibold text-gray-950">{completion.percent}%</div>
+                <div className="text-3xl font-semibold text-gray-950">
+                  {completion.percent}%
+                </div>
               </div>
 
               <div className="mt-5 h-3 overflow-hidden rounded-full bg-gray-100">
@@ -810,8 +855,8 @@ await loadProfileImageUrl(nextProfileImage);
                 onChange={(e) => onPickProfileImage(e.target.files?.[0] ?? null)}
               />
 
-              <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-[28px] border bg-[#f3eee7]">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div className="h-28 w-28 shrink-0 overflow-hidden rounded-[28px] border bg-[#f3eee7]">
                   {profileImageAsset && profileImageUrl ? (
                     <img
                       src={profileImageUrl}
@@ -824,6 +869,7 @@ await loadProfileImageUrl(nextProfileImage);
                     </div>
                   )}
                 </div>
+
                 <div className="min-w-0 flex-1">
                   <button
                     type="button"
@@ -887,6 +933,20 @@ await loadProfileImageUrl(nextProfileImage);
               <p className="mt-3 text-xs leading-5 text-gray-500">
                 Ideal: 15–45 Sekunden, kurz vorstellen, Stil erklären, Licht und Ton sauber.
               </p>
+
+              {introAsset && introVideoUrl ? (
+                <div className="mt-5 overflow-hidden rounded-3xl border bg-black">
+                  <video
+                    src={introVideoUrl}
+                    controls
+                    className="h-64 w-full bg-black object-contain"
+                  />
+                </div>
+              ) : introAsset ? (
+                <div className="mt-5 rounded-2xl border bg-[#fbfaf7] p-4 text-sm text-gray-500">
+                  Intro-Video vorhanden, Vorschau konnte aber nicht geladen werden.
+                </div>
+              ) : null}
 
               {introAsset ? (
                 <div className="mt-5 rounded-2xl border bg-[#fbfaf7] p-4">
@@ -1005,6 +1065,7 @@ await loadProfileImageUrl(nextProfileImage);
               }
             >
               <div className="text-xs font-semibold text-gray-600">Hauptnische</div>
+
               <div className="mt-3 flex flex-wrap gap-2">
                 {groups.map((g) => {
                   const active = g === nicheGroup;
@@ -1096,6 +1157,7 @@ await loadProfileImageUrl(nextProfileImage);
                         }
                       }}
                     />
+
                     <button
                       type="button"
                       onClick={addEquipmentChip}
@@ -1194,7 +1256,9 @@ await loadProfileImageUrl(nextProfileImage);
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="text-sm text-gray-600">
                 Profilvollständigkeit:{" "}
-                <span className="font-semibold text-gray-950">{completion.percent}%</span>
+                <span className="font-semibold text-gray-950">
+                  {completion.percent}%
+                </span>
               </div>
 
               <button

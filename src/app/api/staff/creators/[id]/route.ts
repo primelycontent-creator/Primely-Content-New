@@ -1,13 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireStaff } from "@/lib/auth-server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
 
 export async function GET(
   req: Request,
@@ -29,8 +22,10 @@ export async function GET(
       select: {
         id: true,
         email: true,
+        emailConfirmedAt: true,
         createdAt: true,
         updatedAt: true,
+
         creatorProfile: {
           select: {
             id: true,
@@ -56,8 +51,33 @@ export async function GET(
             approvedAt: true,
             approvedByUserId: true,
             rejectionReason: true,
+
+            profileImageAsset: {
+              select: {
+                id: true,
+                bucket: true,
+                path: true,
+                fileName: true,
+                mimeType: true,
+                sizeBytes: true,
+                createdAt: true,
+              },
+            },
+
+            introVideoAsset: {
+              select: {
+                id: true,
+                bucket: true,
+                path: true,
+                fileName: true,
+                mimeType: true,
+                sizeBytes: true,
+                createdAt: true,
+              },
+            },
           },
         },
+
         assignedBriefs: {
           orderBy: { updatedAt: "desc" },
           take: 10,
@@ -78,6 +98,7 @@ export async function GET(
             },
           },
         },
+
         deliverables: {
           orderBy: { createdAt: "desc" },
           take: 12,
@@ -105,17 +126,11 @@ export async function GET(
       return NextResponse.json({ error: "Creator not found" }, { status: 404 });
     }
 
-    const { data: supabaseUserData, error: supabaseUserErr } =
-      await supabaseAdmin.auth.admin.getUserById(creator.id);
-
-    const emailConfirmed =
-      !supabaseUserErr && !!supabaseUserData?.user?.email_confirmed_at;
-
     return NextResponse.json({
       ok: true,
       creator: {
         ...creator,
-        emailConfirmed,
+        emailConfirmed: !!creator.emailConfirmedAt,
       },
     });
   } catch (e: any) {
