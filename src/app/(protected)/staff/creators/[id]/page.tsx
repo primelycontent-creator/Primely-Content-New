@@ -15,6 +15,8 @@ type CreatorDetail = {
   createdAt: string;
   updatedAt: string;
   emailConfirmed: boolean;
+  introVideoUrl?: string | null;
+
   creatorProfile: {
     id: string;
     fullName: string | null;
@@ -40,6 +42,7 @@ type CreatorDetail = {
     approvedByUserId: string | null;
     rejectionReason: string | null;
   } | null;
+
   assignedBriefs: Array<{
     id: string;
     title: string;
@@ -52,6 +55,7 @@ type CreatorDetail = {
       } | null;
     };
   }>;
+
   deliverables: Array<{
     id: string;
     briefId: string;
@@ -70,6 +74,7 @@ type CreatorDetail = {
 
 async function readSafeJson(res: Response) {
   const text = await res.text();
+
   try {
     return { json: JSON.parse(text), text };
   } catch {
@@ -146,8 +151,7 @@ export default function StaffCreatorDetailPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      const nextToken = data.session?.access_token ?? null;
-      setToken(nextToken);
+      setToken(data.session?.access_token ?? null);
     });
   }, []);
 
@@ -166,9 +170,7 @@ export default function StaffCreatorDetailPage() {
 
       const res = await fetch(`/api/staff/creators/${creatorId}/approve`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const { json, text } = await readSafeJson(res);
@@ -231,7 +233,9 @@ export default function StaffCreatorDetailPage() {
     return (
       <div className="p-8">
         <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">
-          <div className="text-sm text-gray-600">{error ?? "Creator not found"}</div>
+          <div className="text-sm text-gray-600">
+            {error ?? "Creator not found"}
+          </div>
         </div>
       </div>
     );
@@ -250,22 +254,29 @@ export default function StaffCreatorDetailPage() {
             </div>
 
             <div>
-              <div className="text-xs font-semibold tracking-wide text-gray-600">CREATOR</div>
+              <div className="text-xs font-semibold tracking-wide text-gray-600">
+                CREATOR
+              </div>
+
               <h1 className="mt-2 font-serif text-5xl leading-[0.95] tracking-tight text-gray-900">
                 {displayName}
               </h1>
+
               <div className="mt-3 text-sm text-gray-600">{creator.email}</div>
 
               <div className="mt-4 flex flex-wrap gap-2 text-xs text-gray-600">
                 <span className="rounded-full border bg-white px-3 py-1">
                   Price: <b>{priceLabel(p?.price30sCents)}</b>
                 </span>
+
                 <span className="rounded-full border bg-white px-3 py-1">
                   Work mode: <b>{modeLabel(p?.workMode)}</b>
                 </span>
+
                 <span className="rounded-full border bg-white px-3 py-1">
                   Country: <b>{p?.country || "—"}</b>
                 </span>
+
                 <span className="rounded-full border bg-white px-3 py-1">
                   Intro video: <b>{p?.introVideoAssetId ? "Yes" : "No"}</b>
                 </span>
@@ -281,7 +292,9 @@ export default function StaffCreatorDetailPage() {
                 </span>
 
                 <span className={confirmBadge(creator.emailConfirmed)}>
-                  {creator.emailConfirmed ? "Email confirmed" : "Email not confirmed"}
+                  {creator.emailConfirmed
+                    ? "Email confirmed"
+                    : "Email not confirmed"}
                 </span>
               </div>
             </div>
@@ -302,18 +315,70 @@ export default function StaffCreatorDetailPage() {
           </div>
         ) : null}
 
+        <div className="mt-8 rounded-3xl border bg-white p-6">
+          <div className="text-sm font-semibold text-gray-900">Intro-Video</div>
+          <p className="mt-1 text-sm text-gray-600">
+            Kurzes Vorstellungsvideo des Creators zur internen Einschätzung.
+          </p>
+
+          {creator.introVideoUrl ? (
+            <div className="mt-5 overflow-hidden rounded-3xl border bg-black">
+              <video
+                src={creator.introVideoUrl}
+                controls
+                className="h-72 w-full bg-black object-contain"
+              />
+            </div>
+          ) : (
+            <div className="mt-5 rounded-2xl border border-dashed bg-gray-50 p-8 text-sm text-gray-500">
+              Kein Intro-Video vorhanden.
+            </div>
+          )}
+        </div>
+
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <div className="rounded-3xl border bg-white p-6">
-            <div className="text-sm font-semibold text-gray-900">Profile Overview</div>
+            <div className="text-sm font-semibold text-gray-900">
+              Profile Overview
+            </div>
 
             <div className="mt-4 space-y-2 text-sm text-gray-700">
-              <div><span className="text-gray-500">Phone:</span> {p?.phone || "—"}</div>
-              <div><span className="text-gray-500">Niche group:</span> {p?.nicheGroup || "—"}</div>
-              <div><span className="text-gray-500">Niches:</span> {(p?.niches ?? []).length ? p!.niches.join(", ") : "—"}</div>
-              <div><span className="text-gray-500">Portfolio:</span> {p?.portfolioUrl || "—"}</div>
-              <div><span className="text-gray-500">Instagram:</span> {p?.instagram || "—"}</div>
-              <div><span className="text-gray-500">TikTok:</span> {p?.tiktok || "—"}</div>
-              <div><span className="text-gray-500">Address:</span> {[p?.addressLine1, p?.city, p?.postalCode, p?.country].filter(Boolean).join(", ") || "—"}</div>
+              <div>
+                <span className="text-gray-500">Phone:</span> {p?.phone || "—"}
+              </div>
+
+              <div>
+                <span className="text-gray-500">Niche group:</span>{" "}
+                {p?.nicheGroup || "—"}
+              </div>
+
+              <div>
+                <span className="text-gray-500">Niches:</span>{" "}
+                {(p?.niches ?? []).length ? p!.niches.join(", ") : "—"}
+              </div>
+
+              <div>
+                <span className="text-gray-500">Portfolio:</span>{" "}
+                {p?.portfolioUrl || "—"}
+              </div>
+
+              <div>
+                <span className="text-gray-500">Instagram:</span>{" "}
+                {p?.instagram || "—"}
+              </div>
+
+              <div>
+                <span className="text-gray-500">TikTok:</span>{" "}
+                {p?.tiktok || "—"}
+              </div>
+
+              <div>
+                <span className="text-gray-500">Address:</span>{" "}
+                {[p?.addressLine1, p?.city, p?.postalCode, p?.country]
+                  .filter(Boolean)
+                  .join(", ") || "—"}
+              </div>
+
               <div>
                 <span className="text-gray-500">Approved at:</span>{" "}
                 {p?.approvedAt ? new Date(p.approvedAt).toLocaleString() : "—"}
@@ -321,7 +386,9 @@ export default function StaffCreatorDetailPage() {
             </div>
 
             <div className="mt-5 rounded-2xl border bg-white/60 p-4">
-              <div className="text-xs font-semibold tracking-wide text-gray-600">BIO</div>
+              <div className="text-xs font-semibold tracking-wide text-gray-600">
+                BIO
+              </div>
               <p className="mt-2 whitespace-pre-wrap text-sm text-gray-700">
                 {p?.bio?.trim() || "No bio yet."}
               </p>
@@ -329,9 +396,13 @@ export default function StaffCreatorDetailPage() {
           </div>
 
           <div className="rounded-3xl border bg-white p-6">
-            <div className="text-sm font-semibold text-gray-900">Verification Actions</div>
+            <div className="text-sm font-semibold text-gray-900">
+              Verification Actions
+            </div>
+
             <p className="mt-2 text-sm text-gray-600">
-              A creator should only be approved once the profile looks complete and the email has been confirmed.
+              A creator should only be approved once the profile looks complete
+              and the email has been confirmed.
             </p>
 
             <div className="mt-5 flex flex-wrap gap-3">
@@ -356,7 +427,8 @@ export default function StaffCreatorDetailPage() {
 
             {!creator.emailConfirmed ? (
               <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                This creator cannot be approved for campaign assignment until the email address has been confirmed.
+                This creator cannot be approved for campaign assignment until
+                the email address has been confirmed.
               </div>
             ) : null}
 
@@ -364,6 +436,7 @@ export default function StaffCreatorDetailPage() {
               <label className="text-sm font-medium text-gray-700">
                 Rejection reason / internal note
               </label>
+
               <textarea
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
@@ -375,14 +448,20 @@ export default function StaffCreatorDetailPage() {
             {p?.approvalStatus === "REJECTED" && p?.rejectionReason ? (
               <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
                 <div className="font-semibold">Current rejection reason</div>
-                <div className="mt-1 whitespace-pre-wrap">{p.rejectionReason}</div>
+                <div className="mt-1 whitespace-pre-wrap">
+                  {p.rejectionReason}
+                </div>
               </div>
             ) : null}
 
-            <div className="mt-6 text-sm font-semibold text-gray-900">Equipment</div>
+            <div className="mt-6 text-sm font-semibold text-gray-900">
+              Equipment
+            </div>
 
             {(p?.equipment ?? []).length === 0 ? (
-              <p className="mt-4 text-sm text-gray-600">No equipment listed yet.</p>
+              <p className="mt-4 text-sm text-gray-600">
+                No equipment listed yet.
+              </p>
             ) : (
               <div className="mt-4 flex flex-wrap gap-2">
                 {p!.equipment.map((eq) => (
@@ -399,27 +478,33 @@ export default function StaffCreatorDetailPage() {
         </div>
 
         <div className="mt-6 rounded-3xl border bg-white p-6">
-          <div className="text-sm font-semibold text-gray-900">Assigned Briefings</div>
+          <div className="text-sm font-semibold text-gray-900">
+            Assigned Briefings
+          </div>
 
           {creator.assignedBriefs.length === 0 ? (
-            <p className="mt-4 text-sm text-gray-600">No assigned briefings yet.</p>
+            <p className="mt-4 text-sm text-gray-600">
+              No assigned briefings yet.
+            </p>
           ) : (
             <div className="mt-4 space-y-3">
               {creator.assignedBriefs.map((b) => (
-                <div
-                  key={b.id}
-                  className="rounded-2xl border bg-white px-4 py-3"
-                >
+                <div key={b.id} className="rounded-2xl border bg-white px-4 py-3">
                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <div className="text-sm font-semibold text-gray-900">{b.title}</div>
+                      <div className="text-sm font-semibold text-gray-900">
+                        {b.title}
+                      </div>
+
                       <div className="mt-1 text-xs text-gray-500">
-                        Brand: {b.brand.brandProfile?.companyName ?? b.brand.email}
+                        Brand:{" "}
+                        {b.brand.brandProfile?.companyName ?? b.brand.email}
                       </div>
                     </div>
 
                     <div className="text-xs text-gray-500">
-                      {b.status.replace("_", " ")} • {new Date(b.updatedAt).toLocaleString()}
+                      {b.status.replace("_", " ")} •{" "}
+                      {new Date(b.updatedAt).toLocaleString()}
                     </div>
                   </div>
                 </div>
@@ -429,29 +514,30 @@ export default function StaffCreatorDetailPage() {
         </div>
 
         <div className="mt-6 rounded-3xl border bg-white p-6">
-          <div className="text-sm font-semibold text-gray-900">Recent Deliverables</div>
+          <div className="text-sm font-semibold text-gray-900">
+            Recent Deliverables
+          </div>
 
           {creator.deliverables.length === 0 ? (
             <p className="mt-4 text-sm text-gray-600">No deliverables yet.</p>
           ) : (
             <div className="mt-4 space-y-3">
               {creator.deliverables.map((d) => (
-                <div
-                  key={d.id}
-                  className="rounded-2xl border bg-white px-4 py-3"
-                >
+                <div key={d.id} className="rounded-2xl border bg-white px-4 py-3">
                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <div className="min-w-0">
                       <div className="truncate text-sm font-semibold text-gray-900">
                         {d.fileName ?? "Unnamed file"}
                       </div>
+
                       <div className="mt-1 text-xs text-gray-500">
                         Brief: {d.brief.title}
                       </div>
                     </div>
 
                     <div className="text-xs text-gray-500">
-                      {d.status.replace("_", " ")} • {new Date(d.createdAt).toLocaleString()}
+                      {d.status.replace("_", " ")} •{" "}
+                      {new Date(d.createdAt).toLocaleString()}
                     </div>
                   </div>
                 </div>
