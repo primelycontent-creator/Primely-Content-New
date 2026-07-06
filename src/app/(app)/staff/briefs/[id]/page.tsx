@@ -138,10 +138,12 @@ function formatBytes(bytes?: number | null) {
   const units = ["B", "KB", "MB", "GB"];
   let size = bytes;
   let unit = 0;
+
   while (size > 1024 && unit < units.length - 1) {
     size /= 1024;
     unit++;
   }
+
   return `${size.toFixed(unit === 0 ? 0 : 2)} ${units[unit]}`;
 }
 
@@ -154,6 +156,7 @@ function displayNameFromPath(path: string, fileName?: string | null) {
 function isVideo(mime?: string | null, path?: string) {
   const m = (mime || "").toLowerCase();
   if (m.startsWith("video/")) return true;
+
   const p = (path || "").toLowerCase();
   return p.endsWith(".mp4") || p.endsWith(".mov") || p.endsWith(".webm");
 }
@@ -161,13 +164,20 @@ function isVideo(mime?: string | null, path?: string) {
 function isImage(mime?: string | null, path?: string) {
   const m = (mime || "").toLowerCase();
   if (m.startsWith("image/")) return true;
+
   const p = (path || "").toLowerCase();
-  return p.endsWith(".png") || p.endsWith(".jpg") || p.endsWith(".jpeg") || p.endsWith(".webp");
+  return (
+    p.endsWith(".png") ||
+    p.endsWith(".jpg") ||
+    p.endsWith(".jpeg") ||
+    p.endsWith(".webp")
+  );
 }
 
 function isPdf(mime?: string | null, path?: string) {
   const m = (mime || "").toLowerCase();
   if (m.includes("pdf")) return true;
+
   const p = (path || "").toLowerCase();
   return p.endsWith(".pdf");
 }
@@ -182,13 +192,20 @@ function creatorPriceLabel(cents?: number | null) {
   return `€${(cents / 100).toFixed(0)}`;
 }
 
+function subNicheText(niches?: string[] | null) {
+  if (!Array.isArray(niches) || niches.length === 0) return "—";
+  return niches[0]?.trim() || "—";
+}
+
 function approvalBadge(creator: CreatorRow) {
   if (creator.isVerified) {
     return "rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-900";
   }
+
   if (creator.creatorProfile?.approvalStatus === "REJECTED") {
     return "rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-900";
   }
+
   return "rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900";
 }
 
@@ -203,8 +220,14 @@ function staffStatusBadge(status: string) {
   const s = String(status).toUpperCase();
   const base = "rounded-full border px-3 py-1 text-xs font-semibold";
 
-  if (s === "APPROVED") return `${base} border-emerald-200 bg-emerald-50 text-emerald-900`;
-  if (s === "CHANGES_REQUESTED") return `${base} border-amber-200 bg-amber-50 text-amber-900`;
+  if (s === "APPROVED") {
+    return `${base} border-emerald-200 bg-emerald-50 text-emerald-900`;
+  }
+
+  if (s === "CHANGES_REQUESTED") {
+    return `${base} border-amber-200 bg-amber-50 text-amber-900`;
+  }
+
   return `${base} border-gray-200 bg-white text-gray-800`;
 }
 
@@ -212,8 +235,14 @@ function brandStatusBadge(status?: string) {
   const s = String(status ?? "").toUpperCase();
   const base = "rounded-full border px-3 py-1 text-xs font-semibold";
 
-  if (s === "APPROVED") return `${base} border-emerald-200 bg-emerald-50 text-emerald-900`;
-  if (s === "CHANGES_REQUESTED") return `${base} border-amber-200 bg-amber-50 text-amber-900`;
+  if (s === "APPROVED") {
+    return `${base} border-emerald-200 bg-emerald-50 text-emerald-900`;
+  }
+
+  if (s === "CHANGES_REQUESTED") {
+    return `${base} border-amber-200 bg-amber-50 text-amber-900`;
+  }
+
   return `${base} border-gray-200 bg-white text-gray-800`;
 }
 
@@ -253,6 +282,7 @@ export default function StaffBriefDetailPage() {
 
   async function loadAll() {
     if (!token) return;
+
     setLoading(true);
     setError(null);
 
@@ -260,7 +290,9 @@ export default function StaffBriefDetailPage() {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
+
     const { json, text } = await readSafeJson(res);
+
     if (!res.ok) {
       setError((json as any)?.error ?? text.slice(0, 180));
       setLoading(false);
@@ -268,9 +300,11 @@ export default function StaffBriefDetailPage() {
     }
 
     const nextBrief = (json as any).brief as BriefDetail;
+
     nextBrief.deliverables = [...(nextBrief.deliverables ?? [])].sort(
       (a, b) => (a.slotIndex ?? 999) - (b.slotIndex ?? 999)
     );
+
     setBrief(nextBrief);
 
     await loadCreators(false);
@@ -281,17 +315,22 @@ export default function StaffBriefDetailPage() {
     if (!token) return;
 
     const params = new URLSearchParams();
+
     if (creatorQuery.trim()) params.set("q", creatorQuery.trim());
     if (creatorNicheGroup.trim()) params.set("nicheGroup", creatorNicheGroup.trim());
     if (creatorCountry.trim()) params.set("country", creatorCountry.trim());
+
     params.set("onlyVerified", "true");
+
     if (creatorSort.trim()) params.set("sort", creatorSort.trim());
 
     const cRes = await fetch(`/api/staff/creators?${params.toString()}`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
+
     const c = await readSafeJson(cRes);
+
     if (!cRes.ok) {
       setError((c.json as any)?.error ?? c.text.slice(0, 180));
       return;
@@ -311,22 +350,29 @@ export default function StaffBriefDetailPage() {
 
   const nicheOptions = useMemo(() => {
     const set = new Set<string>();
+
     creators.forEach((x) => {
       if (x.creatorProfile?.nicheGroup) set.add(x.creatorProfile.nicheGroup);
     });
+
     return Array.from(set).sort();
   }, [creators]);
-
   async function setStatus(status: string) {
     if (!token) return;
+
     setBusy(true);
     setError(null);
+
     try {
       const res = await fetch(`/api/staff/briefs/${briefId}/status`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ status }),
       });
+
       const { json, text } = await readSafeJson(res);
       if (!res.ok) throw new Error((json as any)?.error ?? text.slice(0, 180));
 
@@ -356,9 +402,13 @@ export default function StaffBriefDetailPage() {
     try {
       const res = await fetch(`/api/staff/briefs/${briefId}/assign`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ creatorId }),
       });
+
       const { json, text } = await readSafeJson(res);
       if (!res.ok) throw new Error((json as any)?.error ?? text.slice(0, 180));
 
@@ -378,25 +428,29 @@ export default function StaffBriefDetailPage() {
 
     const res = await fetch("/api/staff/storage/signed-url", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ bucket, path }),
     });
 
     const { json, text } = await readSafeJson(res);
 
     if (!res.ok) {
-      const err = (json as any)?.error ?? text.slice(0, 200);
-      throw new Error(err);
+      throw new Error((json as any)?.error ?? text.slice(0, 200));
     }
 
     const signedUrl = String((json as any)?.signedUrl ?? "");
     if (!signedUrl) throw new Error("No signedUrl returned");
+
     return signedUrl;
   }
 
   async function onPreviewFile(key: string, bucket: string, path: string) {
     setError(null);
     setSignBusy((p) => ({ ...p, [key]: true }));
+
     try {
       const url = await requestSignedUrl(bucket, path);
       window.open(url, "_blank", "noopener,noreferrer");
@@ -421,7 +475,10 @@ export default function StaffBriefDetailPage() {
 
       const res = await fetch("/api/staff/storage/download", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ bucket, path, fileName }),
       });
 
@@ -435,11 +492,14 @@ export default function StaffBriefDetailPage() {
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
+
       a.href = url;
       a.download = name;
+
       document.body.appendChild(a);
       a.click();
       a.remove();
+
       URL.revokeObjectURL(url);
     } catch (e: any) {
       setError(e?.message ?? "Download error");
@@ -453,21 +513,31 @@ export default function StaffBriefDetailPage() {
     status: "APPROVED" | "CHANGES_REQUESTED"
   ) {
     if (!token) return;
+
     setBusy(true);
     setError(null);
 
     try {
       const res = await fetch(`/api/staff/deliverables/${deliverableId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           status,
-          feedback: status === "CHANGES_REQUESTED" ? (staffFeedback[deliverableId] ?? "") : null,
+          feedback:
+            status === "CHANGES_REQUESTED"
+              ? staffFeedback[deliverableId] ?? ""
+              : null,
         }),
       });
 
       const { json, text } = await readSafeJson(res);
-      if (!res.ok) throw new Error((json as any)?.error ?? text.slice(0, 180));
+
+      if (!res.ok) {
+        throw new Error((json as any)?.error ?? text.slice(0, 180));
+      }
 
       await loadAll();
       router.refresh();
@@ -494,7 +564,10 @@ export default function StaffBriefDetailPage() {
     });
 
     const { json, text } = await readSafeJson(res);
-    if (!res.ok) throw new Error((json as any)?.error ?? text.slice(0, 200));
+
+    if (!res.ok) {
+      throw new Error((json as any)?.error ?? text.slice(0, 200));
+    }
 
     return json as {
       bucket: string;
@@ -522,7 +595,10 @@ export default function StaffBriefDetailPage() {
     });
 
     const { json, text } = await readSafeJson(res);
-    if (!res.ok) throw new Error((json as any)?.error ?? text.slice(0, 200));
+
+    if (!res.ok) {
+      throw new Error((json as any)?.error ?? text.slice(0, 200));
+    }
 
     return json;
   }
@@ -534,7 +610,10 @@ export default function StaffBriefDetailPage() {
       setUploadingStaffFile(true);
       setError(null);
 
-      const path = `users/${sessionUserId}/staff/briefs/${brief.id}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
+      const path = `users/${sessionUserId}/staff/briefs/${
+        brief.id
+      }/${crypto.randomUUID()}-${safeFileName(file.name)}`;
+
       const presign = await presignUpload(path);
 
       const up = await supabase.storage
@@ -560,6 +639,7 @@ export default function StaffBriefDetailPage() {
       setError(e?.message ?? "Staff upload failed");
     } finally {
       setUploadingStaffFile(false);
+
       if (staffFileInputRef.current) {
         staffFileInputRef.current.value = "";
       }
@@ -580,23 +660,31 @@ export default function StaffBriefDetailPage() {
     return (
       <div className="p-8">
         <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">
-          <div className="text-sm text-gray-600">{error ?? "Brief not found"}</div>
+          <div className="text-sm text-gray-600">
+            {error ?? "Brief not found"}
+          </div>
         </div>
       </div>
     );
   }
 
   const deliverables = brief.deliverables ?? [];
-
-  const staffAssets = brief.assets.filter((a) => a.path.includes(`/staff/briefs/${brief.id}/`));
-  const brandAssets = brief.assets.filter((a) => !a.path.includes(`/staff/briefs/${brief.id}/`));
+  const staffAssets = brief.assets.filter((a) =>
+    a.path.includes(`/staff/briefs/${brief.id}/`)
+  );
+  const brandAssets = brief.assets.filter(
+    (a) => !a.path.includes(`/staff/briefs/${brief.id}/`)
+  );
 
   return (
     <div className="p-8">
       <div className="rounded-3xl border bg-white/70 p-10 shadow-sm">
         <div className="flex items-start justify-between gap-6">
           <div className="min-w-0">
-            <div className="text-xs font-semibold tracking-wide text-gray-600">BRIEF</div>
+            <div className="text-xs font-semibold tracking-wide text-gray-600">
+              BRIEF
+            </div>
+
             <h1 className="mt-2 truncate font-serif text-5xl leading-[0.95] tracking-tight text-gray-900">
               {brief.title}
             </h1>
@@ -605,9 +693,12 @@ export default function StaffBriefDetailPage() {
               <span className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-800">
                 {brief.status.replace("_", " ")}
               </span>
+
               <span className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-800">
-                {brief.deliverableCount} slot{brief.deliverableCount > 1 ? "s" : ""}
+                {brief.deliverableCount} slot
+                {brief.deliverableCount > 1 ? "s" : ""}
               </span>
+
               <span className="text-xs text-gray-500">
                 Updated: {new Date(brief.updatedAt).toLocaleString()}
               </span>
@@ -632,35 +723,84 @@ export default function StaffBriefDetailPage() {
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <div className="rounded-3xl border bg-white p-6">
             <div className="text-sm font-semibold text-gray-900">Brand</div>
+
             <div className="mt-3 space-y-2 text-sm text-gray-700">
-              <div><span className="text-gray-500">Email:</span> {brief.brand.email}</div>
-              <div className="pt-2 text-xs font-semibold tracking-wide text-gray-500">CONTACT (from brief)</div>
-              <div><span className="text-gray-500">Company:</span> {brief.companyName ?? "—"}</div>
-              <div><span className="text-gray-500">Name:</span> {brief.contactName ?? "—"}</div>
-              <div><span className="text-gray-500">Email:</span> {brief.contactEmail ?? "—"}</div>
-              <div><span className="text-gray-500">Phone:</span> {brief.contactPhone ?? "—"}</div>
+              <div>
+                <span className="text-gray-500">Email:</span>{" "}
+                {brief.brand.email}
+              </div>
+
+              <div className="pt-2 text-xs font-semibold tracking-wide text-gray-500">
+                CONTACT (from brief)
+              </div>
+
+              <div>
+                <span className="text-gray-500">Company:</span>{" "}
+                {brief.companyName ?? "—"}
+              </div>
+
+              <div>
+                <span className="text-gray-500">Name:</span>{" "}
+                {brief.contactName ?? "—"}
+              </div>
+
+              <div>
+                <span className="text-gray-500">Email:</span>{" "}
+                {brief.contactEmail ?? "—"}
+              </div>
+
+              <div>
+                <span className="text-gray-500">Phone:</span>{" "}
+                {brief.contactPhone ?? "—"}
+              </div>
             </div>
           </div>
 
           <div className="rounded-3xl border bg-white p-6">
             <div className="text-sm font-semibold text-gray-900">Campaign</div>
+
             <div className="mt-3 space-y-2 text-sm text-gray-700">
-              <div><span className="text-gray-500">Deadline:</span> {brief.deadline ? new Date(brief.deadline).toLocaleDateString() : "—"}</div>
-              <div><span className="text-gray-500">License:</span> {brief.licenseTerm ?? "—"}</div>
-              <div><span className="text-gray-500">Niche group:</span> {brief.nicheGroup ?? "—"}</div>
-              <div><span className="text-gray-500">Niches:</span> {(brief.niches ?? []).length ? brief.niches.join(", ") : "—"}</div>
-              <div><span className="text-gray-500">Required uploads:</span> {brief.deliverableCount}</div>
+              <div>
+                <span className="text-gray-500">Deadline:</span>{" "}
+                {brief.deadline
+                  ? new Date(brief.deadline).toLocaleDateString()
+                  : "—"}
+              </div>
+
+              <div>
+                <span className="text-gray-500">License:</span>{" "}
+                {brief.licenseTerm ?? "—"}
+              </div>
+
+              <div>
+                <span className="text-gray-500">Hauptnische:</span>{" "}
+                {brief.nicheGroup ?? "—"}
+              </div>
+
+              <div>
+                <span className="text-gray-500">Unter-Nische:</span>{" "}
+                {subNicheText(brief.niches)}
+              </div>
+
+              <div>
+                <span className="text-gray-500">Required uploads:</span>{" "}
+                {brief.deliverableCount}
+              </div>
             </div>
 
             {brief.description && (
               <div className="mt-5 rounded-2xl border bg-white/60 p-4">
-                <div className="text-xs font-semibold tracking-wide text-gray-600">DESCRIPTION</div>
-                <p className="mt-2 whitespace-pre-wrap text-sm text-gray-700">{brief.description}</p>
+                <div className="text-xs font-semibold tracking-wide text-gray-600">
+                  DESCRIPTION
+                </div>
+
+                <p className="mt-2 whitespace-pre-wrap text-sm text-gray-700">
+                  {brief.description}
+                </p>
               </div>
             )}
           </div>
         </div>
-
         <div className="mt-6 rounded-3xl border bg-white p-6">
           <div className="text-sm font-semibold text-gray-900">Workflow Actions</div>
 
@@ -704,25 +844,42 @@ export default function StaffBriefDetailPage() {
                     <div className="text-base font-semibold text-gray-900">
                       {creatorDisplayName(brief.assignedCreator)}
                     </div>
-                    <div className="mt-1 text-sm text-gray-500">{brief.assignedCreator.email}</div>
+
+                    <div className="mt-1 text-sm text-gray-500">
+                      {brief.assignedCreator.email}
+                    </div>
 
                     <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-600">
                       <span className="rounded-full border bg-white px-3 py-1">
-                        Price: <b>{creatorPriceLabel(brief.assignedCreator.creatorProfile?.price30sCents)}</b>
+                        Price:{" "}
+                        <b>
+                          {creatorPriceLabel(
+                            brief.assignedCreator.creatorProfile?.price30sCents
+                          )}
+                        </b>
                       </span>
+
                       <span className="rounded-full border bg-white px-3 py-1">
-                        Niche: <b>{brief.assignedCreator.creatorProfile?.nicheGroup ?? "—"}</b>
+                        Hauptnische:{" "}
+                        <b>{brief.assignedCreator.creatorProfile?.nicheGroup ?? "—"}</b>
                       </span>
+
                       <span className="rounded-full border bg-white px-3 py-1">
-                        Location: <b>{brief.assignedCreator.creatorProfile?.country || brief.assignedCreator.creatorProfile?.city || "—"}</b>
+                        Location:{" "}
+                        <b>
+                          {brief.assignedCreator.creatorProfile?.country ||
+                            brief.assignedCreator.creatorProfile?.city ||
+                            "—"}
+                        </b>
                       </span>
                     </div>
 
-                    {(brief.assignedCreator.creatorProfile?.niches ?? []).length > 0 ? (
-                      <div className="mt-3 text-xs text-gray-600">
-                        {(brief.assignedCreator.creatorProfile?.niches ?? []).join(", ")}
+                    <div className="mt-3 rounded-2xl border bg-[#fbfaf7] p-4 text-xs leading-5 text-gray-600">
+                      <div className="font-semibold text-gray-800">Unter-Nische</div>
+                      <div className="mt-1 whitespace-pre-wrap">
+                        {subNicheText(brief.assignedCreator.creatorProfile?.niches)}
                       </div>
-                    ) : null}
+                    </div>
                   </div>
 
                   <button
@@ -745,7 +902,9 @@ export default function StaffBriefDetailPage() {
         <div className="mt-6 rounded-3xl border bg-white p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <div className="text-sm font-semibold text-gray-900">Staff Files / Script Templates</div>
+              <div className="text-sm font-semibold text-gray-900">
+                Staff Files / Script Templates
+              </div>
               <p className="mt-1 text-xs text-gray-500">
                 Upload scripts, hooks, shot lists or internal briefing files for the creator.
               </p>
@@ -758,6 +917,7 @@ export default function StaffBriefDetailPage() {
                 className="hidden"
                 onChange={(e) => onPickStaffFile(e.target.files?.[0] ?? null)}
               />
+
               <button
                 type="button"
                 onClick={() => staffFileInputRef.current?.click()}
@@ -786,7 +946,9 @@ export default function StaffBriefDetailPage() {
                     className="flex flex-col gap-3 rounded-2xl border bg-white px-4 py-3 md:flex-row md:items-center md:justify-between"
                   >
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold text-gray-900">{label}</div>
+                      <div className="truncate text-sm font-semibold text-gray-900">
+                        {label}
+                      </div>
                       <div className="text-xs text-gray-500">
                         {a.mimeType ?? "—"} • {formatBytes(a.sizeBytes)} • {a.bucket}
                       </div>
@@ -802,6 +964,7 @@ export default function StaffBriefDetailPage() {
                       >
                         {busyFile ? "…" : "Preview"}
                       </button>
+
                       <button
                         type="button"
                         disabled={busyFile}
@@ -819,7 +982,9 @@ export default function StaffBriefDetailPage() {
         </div>
 
         <div className="mt-6 rounded-3xl border bg-white p-6">
-          <div className="text-sm font-semibold text-gray-900">Brief Attachments (from Brand)</div>
+          <div className="text-sm font-semibold text-gray-900">
+            Brief Attachments (from Brand)
+          </div>
 
           {brandAssets.length === 0 ? (
             <p className="mt-3 text-sm text-gray-600">No brand files attached.</p>
@@ -836,7 +1001,9 @@ export default function StaffBriefDetailPage() {
                     className="flex flex-col gap-3 rounded-2xl border bg-white px-4 py-3 md:flex-row md:items-center md:justify-between"
                   >
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold text-gray-900">{label}</div>
+                      <div className="truncate text-sm font-semibold text-gray-900">
+                        {label}
+                      </div>
                       <div className="text-xs text-gray-500">
                         {a.mimeType ?? "—"} • {formatBytes(a.sizeBytes)} • {a.bucket}
                       </div>
@@ -852,6 +1019,7 @@ export default function StaffBriefDetailPage() {
                       >
                         {busyFile ? "…" : "Preview"}
                       </button>
+
                       <button
                         type="button"
                         disabled={busyFile}
@@ -870,7 +1038,9 @@ export default function StaffBriefDetailPage() {
 
         <div className="mt-6 rounded-3xl border bg-white p-6">
           <div>
-            <div className="text-sm font-semibold text-gray-900">Creator Deliverables</div>
+            <div className="text-sm font-semibold text-gray-900">
+              Creator Deliverables
+            </div>
             <p className="mt-1 text-xs text-gray-500">
               Review every upload slot individually and manage change requests cleanly.
             </p>
@@ -884,6 +1054,7 @@ export default function StaffBriefDetailPage() {
                 const key = `del-${d.id}`;
                 const busyFile = !!signBusy[key];
                 const label = displayNameFromPath(d.path, d.fileName);
+
                 const previewHint = isVideo(d.mimeType, d.path)
                   ? "Video"
                   : isImage(d.mimeType, d.path)
@@ -931,7 +1102,8 @@ export default function StaffBriefDetailPage() {
                           </div>
                         ) : null}
 
-                        {String(d.brandStatus ?? "").toUpperCase() === "CHANGES_REQUESTED" && d.brandFeedback ? (
+                        {String(d.brandStatus ?? "").toUpperCase() ===
+                          "CHANGES_REQUESTED" && d.brandFeedback ? (
                           <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                             <div className="text-xs font-semibold">Brand feedback</div>
                             <div className="mt-1 whitespace-pre-wrap">{d.brandFeedback}</div>
@@ -939,8 +1111,10 @@ export default function StaffBriefDetailPage() {
                         ) : null}
 
                         <div className="mt-1 text-xs text-gray-500">
-                          {d.mimeType ?? "—"} • {formatBytes(d.sizeBytes)} • {new Date(d.createdAt).toLocaleString()}
+                          {d.mimeType ?? "—"} • {formatBytes(d.sizeBytes)} •{" "}
+                          {new Date(d.createdAt).toLocaleString()}
                         </div>
+
                         <div className="truncate text-[11px] text-gray-400">{d.path}</div>
                       </div>
 
@@ -953,6 +1127,7 @@ export default function StaffBriefDetailPage() {
                         >
                           {busyFile ? "…" : "Preview"}
                         </button>
+
                         <button
                           type="button"
                           disabled={busyFile}
@@ -971,7 +1146,10 @@ export default function StaffBriefDetailPage() {
                           placeholder="Write feedback for the creator if changes are needed…"
                           value={staffFeedback[d.id] ?? ""}
                           onChange={(e) =>
-                            setStaffFeedback((p) => ({ ...p, [d.id]: e.target.value }))
+                            setStaffFeedback((p) => ({
+                              ...p,
+                              [d.id]: e.target.value,
+                            }))
                           }
                         />
 
@@ -984,10 +1162,13 @@ export default function StaffBriefDetailPage() {
                           >
                             Approve
                           </button>
+
                           <button
                             type="button"
                             disabled={busy || !(staffFeedback[d.id] ?? "").trim()}
-                            onClick={() => updateDeliverableStatus(d.id, "CHANGES_REQUESTED")}
+                            onClick={() =>
+                              updateDeliverableStatus(d.id, "CHANGES_REQUESTED")
+                            }
                             className="rounded-full border border-amber-700 bg-white px-4 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-60"
                           >
                             Request changes
@@ -1012,7 +1193,9 @@ export default function StaffBriefDetailPage() {
           <div className="max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-3xl border bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b px-6 py-4">
               <div>
-                <div className="text-lg font-semibold text-gray-900">Select Creator</div>
+                <div className="text-lg font-semibold text-gray-900">
+                  Select Creator
+                </div>
                 <div className="mt-1 text-sm text-gray-500">
                   Search and assign a verified creator to this briefing.
                 </div>
@@ -1139,34 +1322,43 @@ export default function StaffBriefDetailPage() {
 
                             <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-600">
                               <span className="rounded-full border bg-white px-3 py-1">
-                                Price: <b>{creatorPriceLabel(creator.creatorProfile?.price30sCents)}</b>
+                                Price:{" "}
+                                <b>{creatorPriceLabel(creator.creatorProfile?.price30sCents)}</b>
                               </span>
+
                               <span className="rounded-full border bg-white px-3 py-1">
-                                Niche: <b>{creator.creatorProfile?.nicheGroup ?? "—"}</b>
+                                Hauptnische:{" "}
+                                <b>{creator.creatorProfile?.nicheGroup ?? "—"}</b>
                               </span>
+
                               <span className="rounded-full border bg-white px-3 py-1">
-                                Location: <b>{creator.creatorProfile?.country || creator.creatorProfile?.city || "—"}</b>
+                                Location:{" "}
+                                <b>
+                                  {creator.creatorProfile?.country ||
+                                    creator.creatorProfile?.city ||
+                                    "—"}
+                                </b>
                               </span>
                             </div>
 
                             <div className="mt-3 line-clamp-2 text-sm text-gray-600">
                               {creator.creatorProfile?.bio?.trim()
                                 ? creator.creatorProfile.bio
-                                : (creator.creatorProfile?.niches ?? []).length
-                                ? (creator.creatorProfile?.niches ?? []).join(", ")
-                                : "No short description yet."}
+                                : subNicheText(creator.creatorProfile?.niches)}
                             </div>
 
                             {(creator.creatorProfile?.equipment ?? []).length > 0 ? (
                               <div className="mt-3 flex flex-wrap gap-2">
-                                {(creator.creatorProfile?.equipment ?? []).slice(0, 3).map((eq) => (
-                                  <span
-                                    key={eq}
-                                    className="rounded-full border bg-white px-3 py-1 text-[11px] font-semibold text-gray-700"
-                                  >
-                                    {eq}
-                                  </span>
-                                ))}
+                                {(creator.creatorProfile?.equipment ?? [])
+                                  .slice(0, 3)
+                                  .map((eq) => (
+                                    <span
+                                      key={eq}
+                                      className="rounded-full border bg-white px-3 py-1 text-[11px] font-semibold text-gray-700"
+                                    >
+                                      {eq}
+                                    </span>
+                                  ))}
                               </div>
                             ) : null}
 

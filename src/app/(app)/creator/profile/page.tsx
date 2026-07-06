@@ -9,61 +9,20 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const NICHE_GROUPS = {
-  "Beauty & Skincare": ["Hautpflege", "Make-up", "Anti-Aging", "Naturkosmetik"],
-  "Fitness & Gesundheit": [
-    "Supplements",
-    "Home Workouts",
-    "Fitness-Programme",
-    "Abnehmprodukte",
-    "Biohacking",
-  ],
-  Fashion: ["Streetwear", "Sportbekleidung", "Schmuck", "Taschen", "Sneaker"],
-  "Tech & Gadgets": [
-    "Smartphones & Zubehör",
-    "Gimbals",
-    "Kameras",
-    "Smartwatches",
-    "KI-Tools & Apps",
-  ],
-  "Home & Living": [
-    "Einrichtung",
-    "Küchengadgets",
-    "Haushaltshelfer",
-    "DIY-Produkte",
-    "Dekoration",
-  ],
-  "Food & Getränke": [
-    "Proteinprodukte",
-    "Kaffee-Marken",
-    "Energy Drinks",
-    "Süßigkeiten",
-    "Kochboxen",
-  ],
-  "Persönlichkeitsentwicklung & Coaching": [
-    "Online-Kurse",
-    "Trading",
-    "Mindset",
-    "Dating-Coaching",
-    "Business-Coaching",
-  ],
-  "Finanzen & Versicherungen": [
-    "Investment-Apps",
-    "Kryptowährungen",
-    "Versicherungen",
-    "Kreditkarten",
-  ],
-  Haustiere: ["Hundefutter", "Katzenzubehör", "Spielzeug", "Pflegeprodukte"],
-  "Reisen & Lifestyle": [
-    "Reisegadgets",
-    "Hotels",
-    "Koffer",
-    "Camper",
-    "Auslandsversicherungen",
-  ],
-} as const;
+const NICHE_GROUPS = [
+  "Beauty & Skincare",
+  "Fitness & Gesundheit",
+  "Fashion",
+  "Tech & Gadgets",
+  "Home & Living",
+  "Food & Getränke",
+  "Persönlichkeitsentwicklung & Coaching",
+  "Finanzen & Versicherungen",
+  "Haustiere",
+  "Reisen & Lifestyle",
+] as const;
 
-type NicheGroup = keyof typeof NICHE_GROUPS;
+type NicheGroup = (typeof NICHE_GROUPS)[number];
 
 type Asset = {
   id: string;
@@ -100,7 +59,6 @@ type CreatorProfileDto = {
 
 async function readSafeJson(res: Response) {
   const text = await res.text();
-
   try {
     return { json: JSON.parse(text), text };
   } catch {
@@ -263,9 +221,13 @@ function Card(props: {
           ) : null}
 
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-gray-950">{props.title}</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-gray-950">
+              {props.title}
+            </h2>
             {props.subtitle ? (
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-500">{props.subtitle}</p>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-gray-500">
+                {props.subtitle}
+              </p>
             ) : null}
           </div>
         </div>
@@ -324,7 +286,7 @@ function CompletionItem(props: { done: boolean; label: string }) {
 }
 
 export default function CreatorProfilePage() {
-  const groups = Object.keys(NICHE_GROUPS) as NicheGroup[];
+  const groups = NICHE_GROUPS;
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -340,7 +302,7 @@ export default function CreatorProfilePage() {
 
   const [workMode, setWorkMode] = useState<"FULL_TIME" | "PART_TIME" | "">("");
   const [nicheGroup, setNicheGroup] = useState<NicheGroup | "">(groups[0] ?? "");
-  const [niches, setNiches] = useState<string[]>([]);
+  const [subNiche, setSubNiche] = useState("");
 
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [bio, setBio] = useState("");
@@ -363,17 +325,12 @@ export default function CreatorProfilePage() {
   const introInputRef = useRef<HTMLInputElement | null>(null);
   const profileImageInputRef = useRef<HTMLInputElement | null>(null);
 
-  const activeSubs = useMemo(() => {
-    if (!nicheGroup) return [];
-    return NICHE_GROUPS[nicheGroup];
-  }, [nicheGroup]);
-
   const completion = useMemo(() => {
     const checks = [
       { key: "profileImage", label: "Profilbild", done: !!profileImageAsset },
       { key: "intro", label: "Intro-Video", done: !!introAsset },
       { key: "basic", label: "Grunddaten", done: !!fullName.trim() && !!phone.trim() && !!workMode },
-      { key: "niches", label: "Nischen", done: !!nicheGroup && niches.length > 0 },
+      { key: "niches", label: "Nische", done: !!nicheGroup && !!subNiche.trim() },
       {
         key: "socials",
         label: "Portfolio / Socials",
@@ -395,7 +352,7 @@ export default function CreatorProfilePage() {
     phone,
     workMode,
     nicheGroup,
-    niches.length,
+    subNiche,
     portfolioUrl,
     instagram,
     tiktok,
@@ -486,11 +443,10 @@ export default function CreatorProfilePage() {
     setWorkMode((p.workMode as any) ?? "");
 
     const ng = (p.nicheGroup as any) ?? "";
-    if (ng && groups.includes(ng)) {
-      setNicheGroup(ng);
-    }
+    if (ng && groups.includes(ng)) setNicheGroup(ng);
 
-    setNiches(Array.isArray(p.niches) ? p.niches : []);
+    const loadedNiches = Array.isArray(p.niches) ? p.niches : [];
+    setSubNiche(loadedNiches[0] ?? "");
 
     setPortfolioUrl(p.portfolioUrl ?? "");
     setBio(p.bio ?? "");
@@ -531,14 +487,6 @@ export default function CreatorProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function toggleNiche(n: string) {
-    setNiches((prev) => {
-      if (prev.includes(n)) return prev.filter((x) => x !== n);
-      if (prev.length >= 5) return prev;
-      return [...prev, n];
-    });
-  }
-
   function addEquipmentChip() {
     const s = equipmentInput.trim();
     if (!s) return;
@@ -577,7 +525,7 @@ export default function CreatorProfilePage() {
           country,
           workMode: workMode || null,
           nicheGroup: nicheGroup || null,
-          niches,
+          niches: subNiche.trim() ? [subNiche.trim()] : [],
           portfolioUrl,
           bio,
           instagram,
@@ -597,7 +545,6 @@ export default function CreatorProfilePage() {
       setSaving(false);
     }
   }
-
   async function presignUpload(token: string, bucket: string, path: string) {
     const res = await fetch("/api/storage/presign", {
       method: "POST",
@@ -621,22 +568,10 @@ export default function CreatorProfilePage() {
     return json as { bucket: string; path: string; token: string; signedUrl?: string };
   }
 
-  async function attachIntroVideo(
-    token: string,
-    meta: {
-      bucket: string;
-      path: string;
-      fileName?: string;
-      mimeType?: string;
-      sizeBytes?: number;
-    }
-  ) {
+  async function attachIntroVideo(token: string, meta: { bucket: string; path: string; fileName?: string; mimeType?: string; sizeBytes?: number }) {
     const res = await fetch("/api/creator/profile/intro-video", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(meta),
     });
 
@@ -644,29 +579,16 @@ export default function CreatorProfilePage() {
     if (!res.ok) throw new Error(json?.error ?? text.slice(0, 200));
 
     const asset = json?.asset as Asset | undefined;
-
     if (asset) {
       setIntroAsset(asset);
       setIntroVideoUrl(await loadSignedUrl(asset));
     }
   }
 
-  async function attachProfileImage(
-    token: string,
-    meta: {
-      bucket: string;
-      path: string;
-      fileName?: string;
-      mimeType?: string;
-      sizeBytes?: number;
-    }
-  ) {
+  async function attachProfileImage(token: string, meta: { bucket: string; path: string; fileName?: string; mimeType?: string; sizeBytes?: number }) {
     const res = await fetch("/api/creator/profile/profile-image", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(meta),
     });
 
@@ -674,7 +596,6 @@ export default function CreatorProfilePage() {
     if (!res.ok) throw new Error(json?.error ?? text.slice(0, 200));
 
     const asset = json?.asset as Asset | undefined;
-
     if (asset) {
       setProfileImageAsset(asset);
       setProfileImageUrl(await loadSignedUrl(asset));
@@ -683,31 +604,20 @@ export default function CreatorProfilePage() {
 
   async function onPickIntroVideo(file: File | null) {
     if (!file) return;
-
-    if (!file.type.includes("video")) {
-      alert("Bitte lade eine Videodatei hoch.");
-      return;
-    }
+    if (!file.type.includes("video")) return alert("Bitte lade eine Videodatei hoch.");
 
     try {
       setUploadingIntro(true);
-
       const auth = await getTokenAndUserId();
-      if (!auth) {
-        alert("Bitte melde dich erneut an.");
-        return;
-      }
+      if (!auth) return alert("Bitte melde dich erneut an.");
 
       const bucket = "ugc";
       const path = `users/${auth.userId}/creator/intro/${crypto.randomUUID()}-${safeFileName(file.name)}`;
-
       const presign = await presignUpload(auth.token, bucket, path);
 
-      const up = await supabase.storage
-        .from(bucket)
-        .uploadToSignedUrl(presign.path, presign.token, file, {
-          contentType: file.type || "video/mp4",
-        });
+      const up = await supabase.storage.from(bucket).uploadToSignedUrl(presign.path, presign.token, file, {
+        contentType: file.type || "video/mp4",
+      });
 
       if (up.error) throw new Error(up.error.message ?? "Upload fehlgeschlagen.");
 
@@ -727,31 +637,20 @@ export default function CreatorProfilePage() {
 
   async function onPickProfileImage(file: File | null) {
     if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      alert("Bitte lade eine Bilddatei hoch.");
-      return;
-    }
+    if (!file.type.startsWith("image/")) return alert("Bitte lade eine Bilddatei hoch.");
 
     try {
       setUploadingProfileImage(true);
-
       const auth = await getTokenAndUserId();
-      if (!auth) {
-        alert("Bitte melde dich erneut an.");
-        return;
-      }
+      if (!auth) return alert("Bitte melde dich erneut an.");
 
       const bucket = "ugc";
       const path = `users/${auth.userId}/creator/profile-image/${crypto.randomUUID()}-${safeFileName(file.name)}`;
-
       const presign = await presignUpload(auth.token, bucket, path);
 
-      const up = await supabase.storage
-        .from(bucket)
-        .uploadToSignedUrl(presign.path, presign.token, file, {
-          contentType: file.type || "image/jpeg",
-        });
+      const up = await supabase.storage.from(bucket).uploadToSignedUrl(presign.path, presign.token, file, {
+        contentType: file.type || "image/jpeg",
+      });
 
       if (up.error) throw new Error(up.error.message ?? "Upload fehlgeschlagen.");
 
@@ -768,6 +667,7 @@ export default function CreatorProfilePage() {
       setUploadingProfileImage(false);
     }
   }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#fbfaf7] px-4 py-6 sm:p-8">
@@ -782,17 +682,11 @@ export default function CreatorProfilePage() {
     <div className="min-h-screen bg-[#fbfaf7] px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex items-center justify-between">
-          <Link
-            href="/creator/dashboard"
-            className="inline-flex items-center gap-2 rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50"
-          >
+          <Link href="/creator/dashboard" className="inline-flex items-center gap-2 rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50">
             ← Zurück
           </Link>
 
-          <Link
-            href="/creator/support"
-            className="hidden rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50 sm:inline-flex"
-          >
+          <Link href="/creator/support" className="hidden rounded-full border bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 hover:bg-gray-50 sm:inline-flex">
             Support
           </Link>
         </div>
@@ -814,23 +708,14 @@ export default function CreatorProfilePage() {
             <div className="rounded-[28px] border bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-semibold text-gray-950">
-                    Profilvollständigkeit
-                  </div>
-                  <div className="mt-1 text-xs text-gray-500">
-                    Für internes Matching und Freigabe
-                  </div>
+                  <div className="text-sm font-semibold text-gray-950">Profilvollständigkeit</div>
+                  <div className="mt-1 text-xs text-gray-500">Für internes Matching und Freigabe</div>
                 </div>
-                <div className="text-3xl font-semibold text-gray-950">
-                  {completion.percent}%
-                </div>
+                <div className="text-3xl font-semibold text-gray-950">{completion.percent}%</div>
               </div>
 
               <div className="mt-5 h-3 overflow-hidden rounded-full bg-gray-100">
-                <div
-                  className="h-full rounded-full bg-gray-950 transition-all"
-                  style={{ width: `${completion.percent}%` }}
-                />
+                <div className="h-full rounded-full bg-gray-950 transition-all" style={{ width: `${completion.percent}%` }} />
               </div>
 
               <div className="mt-5 grid gap-2">
@@ -842,27 +727,13 @@ export default function CreatorProfilePage() {
           </div>
 
           <div className="mt-10 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-            <Card
-              title="Profilbild"
-              subtitle="Ein klares Profilbild hilft unserem Team, dich schneller einzuordnen."
-              icon={<Icon name="image" />}
-            >
-              <input
-                ref={profileImageInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => onPickProfileImage(e.target.files?.[0] ?? null)}
-              />
+            <Card title="Profilbild" subtitle="Ein klares Profilbild hilft unserem Team, dich schneller einzuordnen." icon={<Icon name="image" />}>
+              <input ref={profileImageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => onPickProfileImage(e.target.files?.[0] ?? null)} />
 
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <div className="h-28 w-28 shrink-0 overflow-hidden rounded-[28px] border bg-[#f3eee7]">
                   {profileImageAsset && profileImageUrl ? (
-                    <img
-                      src={profileImageUrl}
-                      alt="Profilbild"
-                      className="h-full w-full object-cover"
-                    />
+                    <img src={profileImageUrl} alt="Profilbild" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-3xl font-semibold text-gray-400">
                       {fullName?.trim()?.charAt(0)?.toUpperCase() || "C"}
@@ -871,91 +742,39 @@ export default function CreatorProfilePage() {
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <button
-                    type="button"
-                    onClick={() => profileImageInputRef.current?.click()}
-                    disabled={uploadingProfileImage}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gray-950 px-6 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 sm:w-auto"
-                  >
+                  <button type="button" onClick={() => profileImageInputRef.current?.click()} disabled={uploadingProfileImage} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gray-950 px-6 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 sm:w-auto">
                     <Icon name="upload" />
-                    {uploadingProfileImage
-                      ? "Wird hochgeladen..."
-                      : profileImageAsset
-                      ? "Profilbild ersetzen"
-                      : "Profilbild hochladen"}
+                    {uploadingProfileImage ? "Wird hochgeladen..." : profileImageAsset ? "Profilbild ersetzen" : "Profilbild hochladen"}
                   </button>
-
-                  <p className="mt-3 text-xs leading-5 text-gray-500">
-                    Empfehlung: klares Gesicht, gutes Licht, ruhiger Hintergrund.
-                  </p>
 
                   {profileImageAsset ? (
                     <div className="mt-4 rounded-2xl border bg-[#fbfaf7] p-4">
-                      <div className="truncate text-sm font-medium text-gray-950">
-                        {profileImageAsset.fileName ?? profileImageAsset.path}
-                      </div>
-                      <div className="mt-1 text-xs text-gray-500">
-                        {bytesToMb(profileImageAsset.sizeBytes)}
-                      </div>
+                      <div className="truncate text-sm font-medium text-gray-950">{profileImageAsset.fileName ?? profileImageAsset.path}</div>
+                      <div className="mt-1 text-xs text-gray-500">{bytesToMb(profileImageAsset.sizeBytes)}</div>
                     </div>
                   ) : null}
                 </div>
               </div>
             </Card>
 
-            <Card
-              title="Intro-Video"
-              subtitle="Ein kurzes Vorstellungsvideo hilft bei der Freigabe und beim Matching."
-              icon={<Icon name="video" />}
-            >
-              <input
-                ref={introInputRef}
-                type="file"
-                accept="video/mp4,video/*"
-                className="hidden"
-                onChange={(e) => onPickIntroVideo(e.target.files?.[0] ?? null)}
-              />
+            <Card title="Intro-Video" subtitle="Ein kurzes Vorstellungsvideo hilft bei der Freigabe und beim Matching." icon={<Icon name="video" />}>
+              <input ref={introInputRef} type="file" accept="video/mp4,video/*" className="hidden" onChange={(e) => onPickIntroVideo(e.target.files?.[0] ?? null)} />
 
-              <button
-                type="button"
-                onClick={() => introInputRef.current?.click()}
-                disabled={uploadingIntro}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gray-950 px-6 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 sm:w-auto"
-              >
+              <button type="button" onClick={() => introInputRef.current?.click()} disabled={uploadingIntro} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gray-950 px-6 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 sm:w-auto">
                 <Icon name="upload" />
-                {uploadingIntro
-                  ? "Wird hochgeladen..."
-                  : introAsset
-                  ? "Intro-Video ersetzen"
-                  : "Intro-Video hochladen"}
+                {uploadingIntro ? "Wird hochgeladen..." : introAsset ? "Intro-Video ersetzen" : "Intro-Video hochladen"}
               </button>
-
-              <p className="mt-3 text-xs leading-5 text-gray-500">
-                Ideal: 15–45 Sekunden, kurz vorstellen, Stil erklären, Licht und Ton sauber.
-              </p>
 
               {introAsset && introVideoUrl ? (
                 <div className="mt-5 overflow-hidden rounded-3xl border bg-black">
-                  <video
-                    src={introVideoUrl}
-                    controls
-                    className="h-64 w-full bg-black object-contain"
-                  />
-                </div>
-              ) : introAsset ? (
-                <div className="mt-5 rounded-2xl border bg-[#fbfaf7] p-4 text-sm text-gray-500">
-                  Intro-Video vorhanden, Vorschau konnte aber nicht geladen werden.
+                  <video src={introVideoUrl} controls className="h-64 w-full bg-black object-contain" />
                 </div>
               ) : null}
 
               {introAsset ? (
                 <div className="mt-5 rounded-2xl border bg-[#fbfaf7] p-4">
-                  <div className="truncate text-sm font-medium text-gray-950">
-                    {introAsset.fileName ?? introAsset.path}
-                  </div>
-                  <div className="mt-1 text-xs text-gray-500">
-                    {bytesToMb(introAsset.sizeBytes)}
-                  </div>
+                  <div className="truncate text-sm font-medium text-gray-950">{introAsset.fileName ?? introAsset.path}</div>
+                  <div className="mt-1 text-xs text-gray-500">{bytesToMb(introAsset.sizeBytes)}</div>
                 </div>
               ) : null}
             </Card>
@@ -966,33 +785,18 @@ export default function CreatorProfilePage() {
               <div className="grid gap-4">
                 <div>
                   <Label>Vollständiger Name</Label>
-                  <Input
-                    className="mt-2"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Vorname Nachname"
-                  />
+                  <Input className="mt-2" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Vorname Nachname" />
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <Label>Telefon</Label>
-                    <Input
-                      className="mt-2"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+49..."
-                      inputMode="tel"
-                    />
+                    <Input className="mt-2" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+49..." inputMode="tel" />
                   </div>
 
                   <div>
                     <Label>Arbeitsmodell</Label>
-                    <select
-                      value={workMode}
-                      onChange={(e) => setWorkMode(e.target.value as any)}
-                      className="mt-2 w-full rounded-2xl border bg-white px-4 py-3 text-sm text-gray-950 outline-none focus:ring-2 focus:ring-gray-950/10"
-                    >
+                    <select value={workMode} onChange={(e) => setWorkMode(e.target.value as any)} className="mt-2 w-full rounded-2xl border bg-white px-4 py-3 text-sm text-gray-950 outline-none focus:ring-2 focus:ring-gray-950/10">
                       <option value="">Auswählen...</option>
                       <option value="FULL_TIME">Vollzeit</option>
                       <option value="PART_TIME">Teilzeit</option>
@@ -1002,141 +806,80 @@ export default function CreatorProfilePage() {
               </div>
             </Card>
 
-            <Card
-              title="Portfolio & Social Media"
-              subtitle="Zeige uns, wo wir deinen Stil und deine bisherigen Inhalte sehen können."
-              icon={<Icon name="link" />}
-            >
+            <Card title="Portfolio & Social Media" subtitle="Zeige uns, wo wir deinen Stil und deine bisherigen Inhalte sehen können." icon={<Icon name="link" />}>
               <div className="grid gap-4">
                 <div>
                   <Label>Portfolio URL</Label>
-                  <Input
-                    className="mt-2"
-                    placeholder="https://..."
-                    value={portfolioUrl}
-                    onChange={(e) => setPortfolioUrl(e.target.value)}
-                  />
+                  <Input className="mt-2" placeholder="https://..." value={portfolioUrl} onChange={(e) => setPortfolioUrl(e.target.value)} />
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <Label>Instagram</Label>
-                    <Input
-                      className="mt-2"
-                      placeholder="@username oder Link"
-                      value={instagram}
-                      onChange={(e) => setInstagram(e.target.value)}
-                    />
+                    <Input className="mt-2" placeholder="@username oder Link" value={instagram} onChange={(e) => setInstagram(e.target.value)} />
                   </div>
 
                   <div>
                     <Label>TikTok</Label>
-                    <Input
-                      className="mt-2"
-                      placeholder="@username oder Link"
-                      value={tiktok}
-                      onChange={(e) => setTiktok(e.target.value)}
-                    />
+                    <Input className="mt-2" placeholder="@username oder Link" value={tiktok} onChange={(e) => setTiktok(e.target.value)} />
                   </div>
                 </div>
 
                 <div>
                   <Label>Bio</Label>
-                  <Textarea
-                    className="mt-2 min-h-[150px]"
-                    placeholder="Kurzbeschreibung über dich, deinen Stil, deine Erfahrung und Content-Stärken..."
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                  />
+                  <Textarea className="mt-2 min-h-[150px]" placeholder="Kurzbeschreibung über dich, deinen Stil, deine Erfahrung und Content-Stärken..." value={bio} onChange={(e) => setBio(e.target.value)} />
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          <div className="mt-6">
+            <Card title="Nische & Spezialisierung" subtitle="Wähle deine Hauptnische und beschreibe frei, welche Themen, Produkte oder Marken am besten zu deinem Content passen." icon={<Icon name="target" />}>
+              <div className="text-xs font-semibold text-gray-600">Hauptnische</div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {groups.map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setNicheGroup(g)}
+                    className={
+                      g === nicheGroup
+                        ? "rounded-full bg-gray-950 px-4 py-2 text-xs font-semibold text-white"
+                        : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50"
+                    }
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-6">
+                <Label>Unter-Nische</Label>
+                <p className="mt-2 text-xs leading-5 text-gray-500">
+                  Beschreibe möglichst genau, welche Produkte, Marken oder Themen am besten zu deinem Content passen. Diese Angaben helfen unserem Team, dich den richtigen Kampagnen zuzuordnen.
+                </p>
+
+                <Textarea
+                  className="mt-3 min-h-[150px]"
+                  value={subNiche}
+                  onChange={(e) => setSubNiche(e.target.value)}
+                  placeholder={`z. B.\n\nSkincare, Gym & Supplements, Luxury Hotels, Streetwear, Smart Home, Haustierprodukte, Kaffee & Barista, Gaming Setup, Outdoor Camping, Babyprodukte`}
+                />
+
+                <div className="mt-3 rounded-2xl border bg-[#fbfaf7] p-4 text-xs leading-5 text-gray-500">
+                  Tipp: Je genauer deine Beschreibung ist, desto einfacher können wir passende Brands für dich finden.
                 </div>
               </div>
             </Card>
           </div>
 
           <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_1fr]">
-            <Card
-              title="Nischen & Spezialisierung"
-              subtitle="Wähle eine Hauptnische und bis zu 5 passende Unter-Nischen."
-              icon={<Icon name="target" />}
-              right={
-                <span className="rounded-full border bg-white px-3 py-1 text-xs font-semibold text-gray-700">
-                  {niches.length}/5 ausgewählt
-                </span>
-              }
-            >
-              <div className="text-xs font-semibold text-gray-600">Hauptnische</div>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {groups.map((g) => {
-                  const active = g === nicheGroup;
-
-                  return (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => {
-                        setNicheGroup(g);
-                        setNiches([]);
-                      }}
-                      className={
-                        active
-                          ? "rounded-full bg-gray-950 px-4 py-2 text-xs font-semibold text-white"
-                          : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50"
-                      }
-                    >
-                      {g}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="mt-5 rounded-2xl border bg-[#fbfaf7] p-4">
-                <div className="mb-3 text-xs font-semibold text-gray-600">
-                  Kampagnen-Fokus auswählen
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {activeSubs.map((n) => {
-                    const selected = niches.includes(n);
-                    const disabled = !selected && niches.length >= 5;
-
-                    return (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => toggleNiche(n)}
-                        disabled={disabled}
-                        className={
-                          selected
-                            ? "rounded-full bg-gray-950 px-4 py-2 text-xs font-semibold text-white"
-                            : disabled
-                            ? "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-400 opacity-60"
-                            : "rounded-full border bg-white px-4 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50"
-                        }
-                      >
-                        {n}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </Card>
-
-            <Card
-              title="Preise & Equipment"
-              subtitle="Gib einen realistischen Eindruck von deinem Setup und deiner Preisrange."
-              icon={<Icon name="camera" />}
-            >
+            <Card title="Preise & Equipment" subtitle="Gib einen realistischen Eindruck von deinem Setup und deiner Preisrange." icon={<Icon name="camera" />}>
               <div className="grid gap-5">
                 <div>
                   <Label>Preis für 1x 30s Video in EUR</Label>
-                  <Input
-                    className="mt-2"
-                    placeholder="z. B. 150"
-                    value={price30sEur}
-                    onChange={(e) => setPrice30sEur(e.target.value)}
-                    inputMode="decimal"
-                  />
+                  <Input className="mt-2" placeholder="z. B. 150" value={price30sEur} onChange={(e) => setPrice30sEur(e.target.value)} inputMode="decimal" />
                 </div>
 
                 <div>
@@ -1157,12 +900,7 @@ export default function CreatorProfilePage() {
                         }
                       }}
                     />
-
-                    <button
-                      type="button"
-                      onClick={addEquipmentChip}
-                      className="shrink-0 rounded-2xl border bg-white px-5 py-3 text-sm font-semibold hover:bg-gray-50"
-                    >
+                    <button type="button" onClick={addEquipmentChip} className="shrink-0 rounded-2xl border bg-white px-5 py-3 text-sm font-semibold hover:bg-gray-50">
                       Hinzufügen
                     </button>
                   </div>
@@ -1170,12 +908,7 @@ export default function CreatorProfilePage() {
                   {equipment.length > 0 ? (
                     <div className="mt-4 flex flex-wrap gap-2">
                       {equipment.map((x) => (
-                        <button
-                          key={x}
-                          type="button"
-                          onClick={() => removeEquipmentChip(x)}
-                          className="rounded-full bg-gray-950 px-3 py-1.5 text-xs font-semibold text-white"
-                        >
+                        <button key={x} type="button" onClick={() => removeEquipmentChip(x)} className="rounded-full bg-gray-950 px-3 py-1.5 text-xs font-semibold text-white">
                           {x} ×
                         </button>
                       ))}
@@ -1188,65 +921,16 @@ export default function CreatorProfilePage() {
                 </div>
               </div>
             </Card>
-          </div>
 
-          <div className="mt-6">
-            <Card
-              title="Adresse"
-              subtitle="Dein Standort hilft beim internen Matching mit passenden Kampagnen."
-              icon={<Icon name="location" />}
-            >
+            <Card title="Adresse" subtitle="Dein Standort hilft beim internen Matching mit passenden Kampagnen." icon={<Icon name="location" />}>
               <div className="grid gap-4">
-                <div>
-                  <Label>Adresse Zeile 1</Label>
-                  <Input
-                    className="mt-2"
-                    placeholder="Straße und Hausnummer"
-                    value={addressLine1}
-                    onChange={(e) => setAddressLine1(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Label>Adresse Zeile 2</Label>
-                  <Input
-                    className="mt-2"
-                    placeholder="Adresszusatz, Wohnung, Etage (optional)"
-                    value={addressLine2}
-                    onChange={(e) => setAddressLine2(e.target.value)}
-                  />
-                </div>
+                <Input placeholder="Straße und Hausnummer" value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} />
+                <Input placeholder="Adresszusatz, Wohnung, Etage (optional)" value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
 
                 <div className="grid gap-4 md:grid-cols-3">
-                  <div>
-                    <Label>Stadt</Label>
-                    <Input
-                      className="mt-2"
-                      placeholder="Stadt"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Postleitzahl</Label>
-                    <Input
-                      className="mt-2"
-                      placeholder="PLZ"
-                      value={postalCode}
-                      onChange={(e) => setPostalCode(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Land</Label>
-                    <Input
-                      className="mt-2"
-                      placeholder="Land"
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                    />
-                  </div>
+                  <Input placeholder="Stadt" value={city} onChange={(e) => setCity(e.target.value)} />
+                  <Input placeholder="PLZ" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+                  <Input placeholder="Land" value={country} onChange={(e) => setCountry(e.target.value)} />
                 </div>
               </div>
             </Card>
@@ -1255,18 +939,10 @@ export default function CreatorProfilePage() {
           <div className="sticky bottom-4 z-10 mt-8 rounded-[28px] border bg-white/95 p-4 shadow-lg backdrop-blur">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="text-sm text-gray-600">
-                Profilvollständigkeit:{" "}
-                <span className="font-semibold text-gray-950">
-                  {completion.percent}%
-                </span>
+                Profilvollständigkeit: <span className="font-semibold text-gray-950">{completion.percent}%</span>
               </div>
 
-              <button
-                type="button"
-                onClick={onSave}
-                disabled={saving}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-gray-950 px-8 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50"
-              >
+              <button type="button" onClick={onSave} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-full bg-gray-950 px-8 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50">
                 <Icon name="save" />
                 {saving ? "Wird gespeichert..." : "Änderungen speichern"}
               </button>
