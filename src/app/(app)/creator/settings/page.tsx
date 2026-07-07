@@ -214,25 +214,45 @@ export default function CreatorSettingsPage() {
   if (!token) return;
 
   const confirmed = window.confirm(
-    "Möchtest du wirklich die Löschung deines Creator-Kontos anfragen?"
+    "Möchtest du deinen Account wirklich endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden."
   );
 
   if (!confirmed) return;
+if (loading) {
+  return (
+    <div className="rounded-[36px] border bg-white/70 p-8 text-sm text-gray-500 shadow-sm">
+      Einstellungen werden geladen...
+    </div>
+  );
+}
+
+if (!settings || !me) {
+  return (
+    <div className="rounded-[36px] border bg-white/70 p-8 shadow-sm">
+      <div className="text-sm text-rose-700">
+        {error ?? "Einstellungen konnten nicht geladen werden."}
+      </div>
+    </div>
+  );
+}
+
+settings satisfies SettingsDto;
+  const secondConfirmed = window.confirm(
+    "Bist du sicher? Dein Konto, Profil und deine Daten werden dauerhaft gelöscht."
+  );
+
+  if (!secondConfirmed) return;
 
   try {
     setDeleteBusy(true);
     setError(null);
     setSuccess(null);
 
-    const res = await fetch("/api/settings", {
-      method: "PATCH",
+    const res = await fetch("/api/account/delete", {
+      method: "DELETE",
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        requestAccountDeletion: true,
-      }),
     });
 
     const { json, text } = await readSafeJson(res);
@@ -241,32 +261,14 @@ export default function CreatorSettingsPage() {
       throw new Error(json?.error ?? text.slice(0, 200));
     }
 
-    await loadAll(token);
-    setSuccess("Löschanfrage wurde gesendet.");
+    await supabase.auth.signOut();
+    window.location.href = "/";
   } catch (e: any) {
-    setError(e?.message ?? "Löschanfrage konnte nicht gesendet werden.");
+    setError(e?.message ?? "Account konnte nicht gelöscht werden.");
   } finally {
     setDeleteBusy(false);
   }
 }
-
-  if (loading) {
-    return (
-      <div className="rounded-[36px] border bg-white/70 p-8 text-sm text-gray-500 shadow-sm">
-        Einstellungen werden geladen...
-      </div>
-    );
-  }
-
-  if (!settings || !me) {
-    return (
-      <div className="rounded-[36px] border bg-white/70 p-8 shadow-sm">
-        <div className="text-sm text-rose-700">
-          {error ?? "Einstellungen konnten nicht geladen werden."}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="rounded-[36px] border bg-white/70 p-5 shadow-sm sm:p-8 lg:p-12">
@@ -316,7 +318,7 @@ export default function CreatorSettingsPage() {
               <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">
                 E-Mail
               </div>
-              <div className="mt-1 text-sm text-gray-950">{me.email}</div>
+              <div className="mt-1 text-sm text-gray-950">{me?.email ?? ""}</div>
             </div>
 
             <div className="rounded-2xl border bg-[#fbfaf7] px-4 py-4">
@@ -393,7 +395,7 @@ export default function CreatorSettingsPage() {
           <ToggleRow
             label="In-App Benachrichtigungen"
             description="Updates in der Plattform anzeigen."
-            checked={settings.inAppNotifications}
+            checked={settings?.inAppNotifications ?? false}
             onChange={(value) => saveSettings({ inAppNotifications: value })}
             disabled={saving}
           />
@@ -401,7 +403,7 @@ export default function CreatorSettingsPage() {
           <ToggleRow
             label="E-Mail Benachrichtigungen"
             description="Wichtige Updates zusätzlich per E-Mail erhalten."
-            checked={settings.emailNotifications}
+            checked={settings?.emailNotifications ?? false}
             onChange={(value) => saveSettings({ emailNotifications: value })}
             disabled={saving}
           />
@@ -409,7 +411,7 @@ export default function CreatorSettingsPage() {
           <ToggleRow
             label="Neue Kampagnen"
             description="Benachrichtigung, wenn dir eine neue Kampagne zugewiesen wird."
-            checked={settings.notifyNewBrief}
+            checked={settings?.notifyNewBrief ?? false}
             onChange={(value) => saveSettings({ notifyNewBrief: value })}
             disabled={saving}
           />
@@ -417,7 +419,7 @@ export default function CreatorSettingsPage() {
           <ToggleRow
             label="Änderungswünsche"
             description="Updates, wenn Staff oder Brand Anpassungen anfragt."
-            checked={settings.notifyStaffChanges || settings.notifyBrandChanges}
+            checked={(settings?.notifyStaffChanges ?? false) || (settings?.notifyBrandChanges ?? false)}
             onChange={(value) =>
               saveSettings({
                 notifyStaffChanges: value,
@@ -430,7 +432,7 @@ export default function CreatorSettingsPage() {
           <ToggleRow
             label="Freigaben"
             description="Benachrichtigung, wenn Deliverables freigegeben werden."
-            checked={settings.notifyApprovals}
+            checked={settings?.notifyApprovals ?? false}
             onChange={(value) => saveSettings({ notifyApprovals: value })}
             disabled={saving}
           />
@@ -438,7 +440,7 @@ export default function CreatorSettingsPage() {
           <ToggleRow
             label="Support"
             description="Updates zu Support-Tickets und Antworten."
-            checked={settings.notifySupport}
+            checked={settings?.notifySupport ?? false}
             onChange={(value) => saveSettings({ notifySupport: value })}
             disabled={saving}
           />
@@ -446,7 +448,7 @@ export default function CreatorSettingsPage() {
           <ToggleRow
             label="Rechtliche Updates"
             description="Hinweise zu AGB, Datenschutz oder Plattformbedingungen."
-            checked={settings.notifyLegalUpdates}
+            checked={settings?.notifyLegalUpdates ?? false}
             onChange={(value) => saveSettings({ notifyLegalUpdates: value })}
             disabled={saving}
           />
@@ -499,10 +501,10 @@ export default function CreatorSettingsPage() {
             </button>
           </div>
 
-          {settings.deleteRequestedAt ? (
+          {settings?.deleteRequestedAt ? (
             <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
               Löschanfrage gesendet am{" "}
-              {new Date(settings.deleteRequestedAt).toLocaleString("de-DE")}.
+              {new Date(settings.deleteRequestedAt!).toLocaleString("de-DE")}.
             </div>
           ) : null}
         </section>

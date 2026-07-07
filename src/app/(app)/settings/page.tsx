@@ -292,38 +292,47 @@ export default function SettingsPage() {
   }
 
   async function requestDelete() {
-    if (!token) return;
+  if (!token) return;
 
-    const confirmed = window.confirm(
-      "Do you really want to request account deletion? Staff will review this request."
-    );
-    if (!confirmed) return;
+  const confirmed = window.confirm(
+    "Möchtest du deinen Account wirklich endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden."
+  );
 
+  if (!confirmed) return;
+
+  const secondConfirmed = window.confirm(
+    "Bist du sicher? Dein Konto, Profil und deine Daten werden dauerhaft gelöscht."
+  );
+
+  if (!secondConfirmed) return;
+
+  try {
     setDeleteBusy(true);
     setError(null);
     setSuccess(null);
 
-    try {
-      const res = await fetch("/api/settings/delete-request", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    const res = await fetch("/api/account/delete", {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-      const { json, text } = await readSafeJson(res);
-      if (!res.ok) {
-        throw new Error((json as any)?.error ?? text.slice(0, 200));
-      }
+    const { json, text } = await readSafeJson(res);
 
-      await loadAll(token);
-      setSuccess("Deletion request submitted.");
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to submit deletion request");
-    } finally {
-      setDeleteBusy(false);
+    if (!res.ok) {
+      throw new Error(json?.error ?? text.slice(0, 200));
     }
+
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  } catch (e: any) {
+    setError(e?.message ?? "Account konnte nicht gelöscht werden.");
+  } finally {
+    setDeleteBusy(false);
   }
+}
+
 
   if (loading) {
     return (

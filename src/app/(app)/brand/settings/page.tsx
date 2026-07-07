@@ -239,38 +239,45 @@ async function requestDelete() {
   if (!token) return;
 
   const confirmed = window.confirm(
-    "Möchtest du die Löschung deines Accounts wirklich anfragen? Unser Team prüft die Anfrage manuell."
+    "Möchtest du deinen Account wirklich endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden."
   );
 
   if (!confirmed) return;
+
+  const secondConfirmed = window.confirm(
+    "Bist du sicher? Dein Konto, Profil und deine Daten werden dauerhaft gelöscht."
+  );
+
+  if (!secondConfirmed) return;
 
   try {
     setDeleteBusy(true);
     setError(null);
     setSuccess(null);
 
-    const res = await fetch("/api/settings", {
-      method: "PATCH",
+    const res = await fetch("/api/account/delete", {
+      method: "DELETE",
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        requestAccountDeletion: true,
-      }),
     });
 
     const { json, text } = await readSafeJson(res);
-    if (!res.ok) throw new Error(json?.error ?? text.slice(0, 200));
 
-    await loadSettings(token);
-    setSuccess("Löschanfrage wurde übermittelt.");
+    if (!res.ok) {
+      throw new Error(json?.error ?? text.slice(0, 200));
+    }
+
+    await supabase.auth.signOut();
+    window.location.href = "/";
   } catch (e: any) {
-    setError(e?.message ?? "Löschanfrage konnte nicht gesendet werden.");
+    setError(e?.message ?? "Account konnte nicht gelöscht werden.");
   } finally {
     setDeleteBusy(false);
   }
 }
+
+
   
 
   if (loading) {
