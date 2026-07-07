@@ -206,15 +206,31 @@ export default function CreatorSettingsPage() {
     return;
   }
 
+  if (!token) {
+    setError("Bitte melde dich erneut an.");
+    return;
+  }
+
   try {
     setPasswordBusy(true);
 
-    const { error } = await supabase.auth.updateUser({
-  password: newPassword,
-  currentPassword,
-} as any);
+    const res = await fetch("/api/account/change-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        currentPassword,
+        newPassword,
+      }),
+    });
 
-    if (error) throw error;
+    const { json, text } = await readSafeJson(res);
+
+    if (!res.ok) {
+      throw new Error(json?.error ?? text.slice(0, 200));
+    }
 
     setCurrentPassword("");
     setNewPassword("");
