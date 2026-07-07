@@ -210,8 +210,9 @@ export default function CreatorSettingsPage() {
     setPasswordBusy(true);
 
     const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
+  password: newPassword,
+  currentPassword,
+} as any);
 
     if (error) throw error;
 
