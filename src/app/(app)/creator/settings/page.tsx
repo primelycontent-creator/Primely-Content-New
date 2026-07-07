@@ -210,36 +210,45 @@ export default function CreatorSettingsPage() {
     }
   }
 
-  async function requestDelete() {
-    if (!token) return;
+ async function requestDelete() {
+  if (!token) return;
 
-    const confirmed = window.confirm(
-      "Möchtest du wirklich die Löschung deines Creator-Kontos anfragen?"
-    );
+  const confirmed = window.confirm(
+    "Möchtest du wirklich die Löschung deines Creator-Kontos anfragen?"
+  );
 
-    if (!confirmed) return;
+  if (!confirmed) return;
 
+  try {
     setDeleteBusy(true);
     setError(null);
     setSuccess(null);
 
-    try {
-      const res = await fetch("/api/settings/delete-request", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        requestAccountDeletion: true,
+      }),
+    });
 
-      const { json, text } = await readSafeJson(res);
-      if (!res.ok) throw new Error(json?.error ?? text.slice(0, 200));
+    const { json, text } = await readSafeJson(res);
 
-      await loadAll(token);
-      setSuccess("Löschanfrage wurde gesendet.");
-    } catch (e: any) {
-      setError(e?.message ?? "Löschanfrage konnte nicht gesendet werden.");
-    } finally {
-      setDeleteBusy(false);
+    if (!res.ok) {
+      throw new Error(json?.error ?? text.slice(0, 200));
     }
+
+    await loadAll(token);
+    setSuccess("Löschanfrage wurde gesendet.");
+  } catch (e: any) {
+    setError(e?.message ?? "Löschanfrage konnte nicht gesendet werden.");
+  } finally {
+    setDeleteBusy(false);
   }
+}
 
   if (loading) {
     return (

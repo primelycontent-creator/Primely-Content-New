@@ -235,37 +235,43 @@ export default function BrandSettingsPage() {
       setPasswordBusy(false);
     }
   }
+async function requestDelete() {
+  if (!token) return;
 
-  async function requestDelete() {
-    if (!token) return;
+  const confirmed = window.confirm(
+    "Möchtest du die Löschung deines Accounts wirklich anfragen? Unser Team prüft die Anfrage manuell."
+  );
 
-    const confirmed = window.confirm(
-      "Möchtest du die Löschung deines Accounts wirklich anfragen? Unser Team prüft die Anfrage manuell."
-    );
+  if (!confirmed) return;
 
-    if (!confirmed) return;
+  try {
+    setDeleteBusy(true);
+    setError(null);
+    setSuccess(null);
 
-    try {
-      setDeleteBusy(true);
-      setError(null);
-      setSuccess(null);
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        requestAccountDeletion: true,
+      }),
+    });
 
-      const res = await fetch("/api/settings/delete-request", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    const { json, text } = await readSafeJson(res);
+    if (!res.ok) throw new Error(json?.error ?? text.slice(0, 200));
 
-      const { json, text } = await readSafeJson(res);
-      if (!res.ok) throw new Error(json?.error ?? text.slice(0, 200));
-
-      await loadSettings(token);
-      setSuccess("Löschanfrage wurde übermittelt.");
-    } catch (e: any) {
-      setError(e?.message ?? "Löschanfrage konnte nicht gesendet werden.");
-    } finally {
-      setDeleteBusy(false);
-    }
+    await loadSettings(token);
+    setSuccess("Löschanfrage wurde übermittelt.");
+  } catch (e: any) {
+    setError(e?.message ?? "Löschanfrage konnte nicht gesendet werden.");
+  } finally {
+    setDeleteBusy(false);
   }
+}
+  
 
   if (loading) {
     return (

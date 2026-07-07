@@ -2,6 +2,23 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-server";
 
+const settingsSelect = {
+  id: true,
+  userId: true,
+  inAppNotifications: true,
+  emailNotifications: true,
+  notifyNewBrief: true,
+  notifyCreatorUpload: true,
+  notifyStaffChanges: true,
+  notifyBrandChanges: true,
+  notifyApprovals: true,
+  notifySupport: true,
+  notifyLegalUpdates: true,
+  deleteRequestedAt: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
 export async function GET(req: Request) {
   try {
     const auth = await requireUser(req);
@@ -12,25 +29,8 @@ export async function GET(req: Request) {
     const settings = await prisma.userSettings.upsert({
       where: { userId: auth.userId },
       update: {},
-      create: {
-        userId: auth.userId,
-      },
-      select: {
-        id: true,
-        userId: true,
-        inAppNotifications: true,
-        emailNotifications: true,
-        notifyNewBrief: true,
-        notifyCreatorUpload: true,
-        notifyStaffChanges: true,
-        notifyBrandChanges: true,
-        notifyApprovals: true,
-        notifySupport: true,
-        notifyLegalUpdates: true,
-        deleteRequestedAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      create: { userId: auth.userId },
+      select: settingsSelect,
     });
 
     return NextResponse.json({ ok: true, settings });
@@ -49,28 +49,22 @@ export async function PATCH(req: Request) {
 
     const body = await req.json().catch(() => ({}));
 
-    const toBool = (v: unknown, fallback: boolean) =>
-      typeof v === "boolean" ? v : fallback;
-
     const existing = await prisma.userSettings.upsert({
       where: { userId: auth.userId },
       update: {},
-      create: {
-        userId: auth.userId,
-      },
-      select: {
-        inAppNotifications: true,
-        emailNotifications: true,
-        notifyNewBrief: true,
-        notifyCreatorUpload: true,
-        notifyStaffChanges: true,
-        notifyBrandChanges: true,
-        notifyApprovals: true,
-        notifySupport: true,
-        notifyLegalUpdates: true,
-        deleteRequestedAt: true,
-      },
+      create: { userId: auth.userId },
+      select: settingsSelect,
     });
+
+    const toBool = (v: unknown, fallback: boolean) =>
+      typeof v === "boolean" ? v : fallback;
+
+    const deleteRequestedAt =
+      body?.requestAccountDeletion === true
+        ? new Date()
+        : body?.cancelAccountDeletion === true
+        ? null
+        : existing.deleteRequestedAt;
 
     const settings = await prisma.userSettings.update({
       where: { userId: auth.userId },
@@ -84,23 +78,9 @@ export async function PATCH(req: Request) {
         notifyApprovals: toBool(body?.notifyApprovals, existing.notifyApprovals),
         notifySupport: toBool(body?.notifySupport, existing.notifySupport),
         notifyLegalUpdates: toBool(body?.notifyLegalUpdates, existing.notifyLegalUpdates),
+        deleteRequestedAt,
       },
-      select: {
-        id: true,
-        userId: true,
-        inAppNotifications: true,
-        emailNotifications: true,
-        notifyNewBrief: true,
-        notifyCreatorUpload: true,
-        notifyStaffChanges: true,
-        notifyBrandChanges: true,
-        notifyApprovals: true,
-        notifySupport: true,
-        notifyLegalUpdates: true,
-        deleteRequestedAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: settingsSelect,
     });
 
     return NextResponse.json({ ok: true, settings });
