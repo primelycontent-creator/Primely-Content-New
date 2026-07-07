@@ -88,6 +88,7 @@ export default function CreatorSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -105,6 +106,7 @@ export default function CreatorSettingsPage() {
 
   async function loadAll(currentToken?: string | null) {
     const authToken = currentToken ?? token;
+
     if (!authToken) {
       setLoading(false);
       return;
@@ -128,8 +130,13 @@ export default function CreatorSettingsPage() {
       const meData = await readSafeJson(meRes);
       const settingsData = await readSafeJson(settingsRes);
 
-      if (!meRes.ok) throw new Error(meData.json?.error ?? meData.text.slice(0, 200));
-      if (!settingsRes.ok) throw new Error(settingsData.json?.error ?? settingsData.text.slice(0, 200));
+      if (!meRes.ok) {
+        throw new Error(meData.json?.error ?? meData.text.slice(0, 200));
+      }
+
+      if (!settingsRes.ok) {
+        throw new Error(settingsData.json?.error ?? settingsData.text.slice(0, 200));
+      }
 
       setMe(meData.json?.user ?? null);
       setSettings(settingsData.json?.settings ?? null);
@@ -165,7 +172,10 @@ export default function CreatorSettingsPage() {
       });
 
       const { json, text } = await readSafeJson(res);
-      if (!res.ok) throw new Error(json?.error ?? text.slice(0, 200));
+
+      if (!res.ok) {
+        throw new Error(json?.error ?? text.slice(0, 200));
+      }
 
       setSettings(json?.settings ?? optimistic);
       setSuccess("Einstellungen gespeichert.");
@@ -181,18 +191,37 @@ export default function CreatorSettingsPage() {
     setError(null);
     setSuccess(null);
 
+    if (!me?.email) {
+      setError("E-Mail konnte nicht geladen werden.");
+      return;
+    }
+
+    if (!currentPassword) {
+      setError("Bitte gib dein aktuelles Passwort ein.");
+      return;
+    }
+
     if (!newPassword || newPassword.length < 6) {
-      setError("Das Passwort muss mindestens 6 Zeichen lang sein.");
+      setError("Das neue Passwort muss mindestens 6 Zeichen lang sein.");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError("Die Passwörter stimmen nicht überein.");
+      setError("Die neuen Passwörter stimmen nicht überein.");
       return;
     }
 
     try {
       setPasswordBusy(true);
+
+      const loginCheck = await supabase.auth.signInWithPassword({
+        email: me.email,
+        password: currentPassword,
+      });
+
+      if (loginCheck.error) {
+        throw new Error("Das aktuelle Passwort ist falsch.");
+      }
 
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
@@ -200,6 +229,7 @@ export default function CreatorSettingsPage() {
 
       if (error) throw error;
 
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setSuccess("Passwort wurde aktualisiert.");
@@ -210,66 +240,65 @@ export default function CreatorSettingsPage() {
     }
   }
 
- async function requestDelete() {
-  if (!token) return;
+  async function requestDelete() {
+    if (!token) return;
 
-  const confirmed = window.confirm(
-    "Möchtest du deinen Account wirklich endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden."
-  );
+    const confirmed = window.confirm(
+      "Möchtest du deinen Account wirklich endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden."
+    );
 
-  if (!confirmed) return;
-if (loading) {
-  return (
-    <div className="rounded-[36px] border bg-white/70 p-8 text-sm text-gray-500 shadow-sm">
-      Einstellungen werden geladen...
-    </div>
-  );
-}
+    if (!confirmed) return;
 
-if (!settings || !me) {
-  return (
-    <div className="rounded-[36px] border bg-white/70 p-8 shadow-sm">
-      <div className="text-sm text-rose-700">
-        {error ?? "Einstellungen konnten nicht geladen werden."}
-      </div>
-    </div>
-  );
-}
+    const secondConfirmed = window.confirm(
+      "Bist du sicher? Dein Konto, Profil und deine Daten werden dauerhaft gelöscht."
+    );
 
-settings satisfies SettingsDto;
-  const secondConfirmed = window.confirm(
-    "Bist du sicher? Dein Konto, Profil und deine Daten werden dauerhaft gelöscht."
-  );
+    if (!secondConfirmed) return;
 
-  if (!secondConfirmed) return;
+    try {
+      setDeleteBusy(true);
+      setError(null);
+      setSuccess(null);
 
-  try {
-    setDeleteBusy(true);
-    setError(null);
-    setSuccess(null);
+      const res = await fetch("/api/account/delete", {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    const res = await fetch("/api/account/delete", {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+      const { json, text } = await readSafeJson(res);
 
-    const { json, text } = await readSafeJson(res);
+      if (!res.ok) {
+        throw new Error(json?.error ?? text.slice(0, 200));
+      }
 
-    if (!res.ok) {
-      throw new Error(json?.error ?? text.slice(0, 200));
+      await supabase.auth.signOut();
+      window.location.href = "/";
+    } catch (e: any) {
+      setError(e?.message ?? "Account konnte nicht gelöscht werden.");
+    } finally {
+      setDeleteBusy(false);
     }
-
-    await supabase.auth.signOut();
-    window.location.href = "/";
-  } catch (e: any) {
-    setError(e?.message ?? "Account konnte nicht gelöscht werden.");
-  } finally {
-    setDeleteBusy(false);
   }
-}
 
+  if (loading) {
+    return (
+      <div className="rounded-[36px] border bg-white/70 p-8 text-sm text-gray-500 shadow-sm">
+        Einstellungen werden geladen...
+      </div>
+    );
+  }
+
+  if (!settings || !me) {
+    return (
+      <div className="rounded-[36px] border bg-white/70 p-8 shadow-sm">
+        <div className="text-sm text-rose-700">
+          {error ?? "Einstellungen konnten nicht geladen werden."}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="rounded-[36px] border bg-white/70 p-5 shadow-sm sm:p-8 lg:p-12">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -318,7 +347,7 @@ settings satisfies SettingsDto;
               <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">
                 E-Mail
               </div>
-              <div className="mt-1 text-sm text-gray-950">{me?.email ?? ""}</div>
+              <div className="mt-1 text-sm text-gray-950">{me.email}</div>
             </div>
 
             <div className="rounded-2xl border bg-[#fbfaf7] px-4 py-4">
@@ -332,7 +361,10 @@ settings satisfies SettingsDto;
               <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">
                 Profil
               </div>
-              <Link href="/creator/profile" className="mt-1 inline-block text-sm font-semibold underline">
+              <Link
+                href="/creator/profile"
+                className="mt-1 inline-block text-sm font-semibold underline"
+              >
                 Creator-Profil öffnen
               </Link>
             </div>
@@ -351,6 +383,14 @@ settings satisfies SettingsDto;
           <div className="mt-6 grid gap-4">
             <input
               type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Aktuelles Passwort"
+              className="w-full rounded-2xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gray-950/10"
+            />
+
+            <input
+              type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Neues Passwort"
@@ -361,7 +401,7 @@ settings satisfies SettingsDto;
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Passwort wiederholen"
+              placeholder="Neues Passwort wiederholen"
               className="w-full rounded-2xl border bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gray-950/10"
             />
 
@@ -395,7 +435,7 @@ settings satisfies SettingsDto;
           <ToggleRow
             label="In-App Benachrichtigungen"
             description="Updates in der Plattform anzeigen."
-            checked={settings?.inAppNotifications ?? false}
+            checked={settings.inAppNotifications}
             onChange={(value) => saveSettings({ inAppNotifications: value })}
             disabled={saving}
           />
@@ -403,7 +443,7 @@ settings satisfies SettingsDto;
           <ToggleRow
             label="E-Mail Benachrichtigungen"
             description="Wichtige Updates zusätzlich per E-Mail erhalten."
-            checked={settings?.emailNotifications ?? false}
+            checked={settings.emailNotifications}
             onChange={(value) => saveSettings({ emailNotifications: value })}
             disabled={saving}
           />
@@ -411,15 +451,23 @@ settings satisfies SettingsDto;
           <ToggleRow
             label="Neue Kampagnen"
             description="Benachrichtigung, wenn dir eine neue Kampagne zugewiesen wird."
-            checked={settings?.notifyNewBrief ?? false}
+            checked={settings.notifyNewBrief}
             onChange={(value) => saveSettings({ notifyNewBrief: value })}
+            disabled={saving}
+          />
+
+          <ToggleRow
+            label="Creator-Uploads"
+            description="Benachrichtigung, wenn du Uploads oder Deliverable-Updates bekommst."
+            checked={settings.notifyCreatorUpload}
+            onChange={(value) => saveSettings({ notifyCreatorUpload: value })}
             disabled={saving}
           />
 
           <ToggleRow
             label="Änderungswünsche"
             description="Updates, wenn Staff oder Brand Anpassungen anfragt."
-            checked={(settings?.notifyStaffChanges ?? false) || (settings?.notifyBrandChanges ?? false)}
+            checked={settings.notifyStaffChanges || settings.notifyBrandChanges}
             onChange={(value) =>
               saveSettings({
                 notifyStaffChanges: value,
@@ -432,7 +480,7 @@ settings satisfies SettingsDto;
           <ToggleRow
             label="Freigaben"
             description="Benachrichtigung, wenn Deliverables freigegeben werden."
-            checked={settings?.notifyApprovals ?? false}
+            checked={settings.notifyApprovals}
             onChange={(value) => saveSettings({ notifyApprovals: value })}
             disabled={saving}
           />
@@ -440,7 +488,7 @@ settings satisfies SettingsDto;
           <ToggleRow
             label="Support"
             description="Updates zu Support-Tickets und Antworten."
-            checked={settings?.notifySupport ?? false}
+            checked={settings.notifySupport}
             onChange={(value) => saveSettings({ notifySupport: value })}
             disabled={saving}
           />
@@ -448,7 +496,7 @@ settings satisfies SettingsDto;
           <ToggleRow
             label="Rechtliche Updates"
             description="Hinweise zu AGB, Datenschutz oder Plattformbedingungen."
-            checked={settings?.notifyLegalUpdates ?? false}
+            checked={settings.notifyLegalUpdates}
             onChange={(value) => saveSettings({ notifyLegalUpdates: value })}
             disabled={saving}
           />
@@ -479,15 +527,21 @@ settings satisfies SettingsDto;
           </h2>
 
           <p className="mt-2 text-sm leading-6 text-gray-500">
-            Rechtliche Seiten und Löschanfrage für dein Creator-Konto.
+            Rechtliche Seiten und direkte Löschung deines Creator-Kontos.
           </p>
 
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link href="/legal/creator#privacy" className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold hover:bg-gray-50">
+            <Link
+              href="/legal/creator#privacy"
+              className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold hover:bg-gray-50"
+            >
               Datenschutz
             </Link>
 
-            <Link href="/legal/creator#terms" className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold hover:bg-gray-50">
+            <Link
+              href="/legal/creator#terms"
+              className="rounded-full border bg-white px-5 py-2.5 text-sm font-semibold hover:bg-gray-50"
+            >
               Bedingungen
             </Link>
 
@@ -497,16 +551,9 @@ settings satisfies SettingsDto;
               disabled={deleteBusy}
               className="rounded-full border border-rose-300 bg-rose-50 px-5 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
             >
-              {deleteBusy ? "Wird gesendet..." : "Löschung anfragen"}
+              {deleteBusy ? "Wird gelöscht..." : "Konto endgültig löschen"}
             </button>
           </div>
-
-          {settings?.deleteRequestedAt ? (
-            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-              Löschanfrage gesendet am{" "}
-              {new Date(settings.deleteRequestedAt!).toLocaleString("de-DE")}.
-            </div>
-          ) : null}
         </section>
       </div>
     </div>
