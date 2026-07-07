@@ -187,58 +187,44 @@ export default function CreatorSettingsPage() {
     }
   }
 
-  async function changePassword() {
-    setError(null);
-    setSuccess(null);
+ async function changePassword() {
+  setError(null);
+  setSuccess(null);
 
-    if (!me?.email) {
-      setError("E-Mail konnte nicht geladen werden.");
-      return;
-    }
-
-    if (!currentPassword) {
-      setError("Bitte gib dein aktuelles Passwort ein.");
-      return;
-    }
-
-    if (!newPassword || newPassword.length < 6) {
-      setError("Das neue Passwort muss mindestens 6 Zeichen lang sein.");
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError("Die neuen Passwörter stimmen nicht überein.");
-      return;
-    }
-
-    try {
-      setPasswordBusy(true);
-
-      const loginCheck = await supabase.auth.signInWithPassword({
-        email: me.email,
-        password: currentPassword,
-      });
-
-      if (loginCheck.error) {
-        throw new Error("Das aktuelle Passwort ist falsch.");
-      }
-
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (error) throw error;
-
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setSuccess("Passwort wurde aktualisiert.");
-    } catch (e: any) {
-      setError(e?.message ?? "Passwort konnte nicht geändert werden.");
-    } finally {
-      setPasswordBusy(false);
-    }
+  if (!currentPassword) {
+    setError("Bitte gib dein aktuelles Passwort ein.");
+    return;
   }
+
+  if (!newPassword || newPassword.length < 6) {
+    setError("Das neue Passwort muss mindestens 6 Zeichen lang sein.");
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    setError("Die neuen Passwörter stimmen nicht überein.");
+    return;
+  }
+
+  try {
+    setPasswordBusy(true);
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) throw error;
+
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setSuccess("Passwort wurde aktualisiert.");
+  } catch (e: any) {
+    setError(e?.message ?? "Passwort konnte nicht geändert werden.");
+  } finally {
+    setPasswordBusy(false);
+  }
+}
 
   async function requestDelete() {
     if (!token) return;
