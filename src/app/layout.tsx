@@ -25,6 +25,7 @@ export default function RootLayout({
         <NotificationBell />
         <LegalAcceptanceGate>{children}</LegalAcceptanceGate>
         <Footer />
+        <SpeedInsights />
       </body>
     </html>
   );
